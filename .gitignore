@@ -1,0 +1,13 @@
+# local environment files
+.env
+.env.local
+.env.*.local
+
+# Docker resources / databases local mount directories
+postgres-data/
+redis-data/
+rabbitmq-data/
+
+# OS files
+.DS_Store
+Thumbs.db

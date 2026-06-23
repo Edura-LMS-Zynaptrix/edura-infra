@@ -1,0 +1,280 @@
+version: '3.8'
+
+services:
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: edura
+      POSTGRES_PASSWORD: edura
+      POSTGRES_DB: edura
+      POSTGRES_MULTIPLE_DATABASES: auth_db,user_db,course_db,content_db,enrollment_db,payment_db,assessment_db,progress_db,notification_db,analytics_db,admin_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/init-dbs.sh:/docker-entrypoint-initdb.d/init-dbs.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U edura"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth_service
+      - user_service
+      - course_service
+      - content_service
+      - enrollment_service
+      - payment_service
+      - assessment_service
+      - progress_service
+      - notification_service
+      - analytics_service
+      - admin_service
+
+  auth_service:
+    build:
+      context: ../edura-backend
+      dockerfile: auth_service/Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../edura-backend/auth_service:/app
+      - ../edura-backend/shared:/app/shared
+    environment:
+      DATABASE_URL: ${AUTH_DATABASE_URL:-postgresql://edura:edura@postgres:5432/auth_db}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      SECRET_KEY: ${SECRET_KEY:-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  user_service:
+    build:
+      context: ../edura-backend
+      dockerfile: user_service/Dockerfile
+    ports:
+      - "8002:8002"
+    volumes:
+      - ../edura-backend/user_service:/app
+      - ../edura-backend/shared:/app/shared
+    environment:
+      DATABASE_URL: ${USER_DATABASE_URL:-postgresql://edura:edura@postgres:5432/user_db}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      SECRET_KEY: ${SECRET_KEY:-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  course_service:
+    build:
+      context: ../edura-backend
+      dockerfile: course_service/Dockerfile
+    ports:
+      - "8003:8003"
+    volumes:
+      - ../edura-backend/course_service:/app
+      - ../edura-backend/shared:/app/shared
+    environment:
+      DATABASE_URL: ${COURSE_DATABASE_URL:-postgresql://edura:edura@postgres:5432/course_db}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      SECRET_KEY: ${SECRET_KEY:-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  content_service:
+    build:
+      context: ../edura-backend
+      dockerfile: content_service/Dockerfile
+    ports:
+      - "8004:8004"
+    volumes:
+      - ../edura-backend/content_service:/app
+      - ../edura-backend/shared:/app/shared
+    environment:
+      DATABASE_URL: ${CONTENT_DATABASE_URL:-postgresql://edura:edura@postgres:5432/content_db}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      SECRET_KEY: ${SECRET_KEY:-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  enrollment_service:
+    build:
+      context: ../edura-backend
+      dockerfile: enrollment_service/Dockerfile
+    ports:
+      - "8005:8005"
+    volumes:
+      - ../edura-backend/enrollment_service:/app
+      - ../edura-backend/shared:/app/shared
+    environment:
+      DATABASE_URL: ${ENROLLMENT_DATABASE_URL:-postgresql://edura:edura@postgres:5432/enrollment_db}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      SECRET_KEY: ${SECRET_KEY:-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  payment_service:
+    build:
+      context: ../edura-backend
+      dockerfile: payment_service/Dockerfile
+    ports:
+      - "8006:8006"
+    volumes:
+      - ../edura-backend/payment_service:/app
+      - ../edura-backend/shared:/app/shared
+    environment:
+      DATABASE_URL: ${PAYMENT_DATABASE_URL:-postgresql://edura:edura@postgres:5432/payment_db}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      SECRET_KEY: ${SECRET_KEY:-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  assessment_service:
+    build:
+      context: ../edura-backend
+      dockerfile: assessment_service/Dockerfile
+    ports:
+      - "8007:8007"
+    volumes:
+      - ../edura-backend/assessment_service:/app
+      - ../edura-backend/shared:/app/shared
+    environment:
+      DATABASE_URL: ${ASSESSMENT_DATABASE_URL:-postgresql://edura:edura@postgres:5432/assessment_db}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      SECRET_KEY: ${SECRET_KEY:-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  progress_service:
+    build:
+      context: ../edura-backend
+      dockerfile: progress_service/Dockerfile
+    ports:
+      - "8008:8008"
+    volumes:
+      - ../edura-backend/progress_service:/app
+      - ../edura-backend/shared:/app/shared
+    environment:
+      DATABASE_URL: ${PROGRESS_DATABASE_URL:-postgresql://edura:edura@postgres:5432/progress_db}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      SECRET_KEY: ${SECRET_KEY:-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  notification_service:
+    build:
+      context: ../edura-backend
+      dockerfile: notification_service/Dockerfile
+    ports:
+      - "8009:8009"
+    volumes:
+      - ../edura-backend/notification_service:/app
+      - ../edura-backend/shared:/app/shared
+    environment:
+      DATABASE_URL: ${NOTIFICATION_DATABASE_URL:-postgresql://edura:edura@postgres:5432/notification_db}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      SECRET_KEY: ${SECRET_KEY:-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  analytics_service:
+    build:
+      context: ../edura-backend
+      dockerfile: analytics_service/Dockerfile
+    ports:
+      - "8010:8010"
+    volumes:
+      - ../edura-backend/analytics_service:/app
+      - ../edura-backend/shared:/app/shared
+    environment:
+      DATABASE_URL: ${ANALYTICS_DATABASE_URL:-postgresql://edura:edura@postgres:5432/analytics_db}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      SECRET_KEY: ${SECRET_KEY:-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  admin_service:
+    build:
+      context: ../edura-backend
+      dockerfile: admin_service/Dockerfile
+    ports:
+      - "8011:8011"
+    volumes:
+      - ../edura-backend/admin_service:/app
+      - ../edura-backend/shared:/app/shared
+    environment:
+      DATABASE_URL: ${ADMIN_DATABASE_URL:-postgresql://edura:edura@postgres:5432/admin_db}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      SECRET_KEY: ${SECRET_KEY:-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
