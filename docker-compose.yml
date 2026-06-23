@@ -2,23 +2,6 @@ version: '3.8'
 
 services:
 
-  postgres:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: edura
-      POSTGRES_PASSWORD: edura
-      POSTGRES_DB: edura
-      POSTGRES_MULTIPLE_DATABASES: auth_db,user_db,course_db,content_db,enrollment_db,payment_db,assessment_db,progress_db,notification_db,analytics_db,admin_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./postgres/init-dbs.sh:/docker-entrypoint-initdb.d/init-dbs.sh
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U edura"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   redis:
     image: redis:7
     ports:
@@ -68,15 +51,12 @@ services:
     volumes:
       - ../edura-backend/auth_service:/app
       - ../edura-backend/shared:/app/shared
-    environment:
-      DATABASE_URL: ${AUTH_DATABASE_URL:-postgresql://edura:edura@postgres:5432/auth_db}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      SECRET_KEY: ${SECRET_KEY:-secret}
+    env_file:
+      - ../edura-backend/auth_service/.env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   user_service:
@@ -88,15 +68,12 @@ services:
     volumes:
       - ../edura-backend/user_service:/app
       - ../edura-backend/shared:/app/shared
-    environment:
-      DATABASE_URL: ${USER_DATABASE_URL:-postgresql://edura:edura@postgres:5432/user_db}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      SECRET_KEY: ${SECRET_KEY:-secret}
+    env_file:
+      - ../edura-backend/user_service/.env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   course_service:
@@ -108,15 +85,12 @@ services:
     volumes:
       - ../edura-backend/course_service:/app
       - ../edura-backend/shared:/app/shared
-    environment:
-      DATABASE_URL: ${COURSE_DATABASE_URL:-postgresql://edura:edura@postgres:5432/course_db}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      SECRET_KEY: ${SECRET_KEY:-secret}
+    env_file:
+      - ../edura-backend/course_service/.env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   content_service:
@@ -128,15 +102,12 @@ services:
     volumes:
       - ../edura-backend/content_service:/app
       - ../edura-backend/shared:/app/shared
-    environment:
-      DATABASE_URL: ${CONTENT_DATABASE_URL:-postgresql://edura:edura@postgres:5432/content_db}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      SECRET_KEY: ${SECRET_KEY:-secret}
+    env_file:
+      - ../edura-backend/content_service/.env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   enrollment_service:
@@ -148,15 +119,12 @@ services:
     volumes:
       - ../edura-backend/enrollment_service:/app
       - ../edura-backend/shared:/app/shared
-    environment:
-      DATABASE_URL: ${ENROLLMENT_DATABASE_URL:-postgresql://edura:edura@postgres:5432/enrollment_db}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      SECRET_KEY: ${SECRET_KEY:-secret}
+    env_file:
+      - ../edura-backend/enrollment_service/.env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   payment_service:
@@ -168,15 +136,12 @@ services:
     volumes:
       - ../edura-backend/payment_service:/app
       - ../edura-backend/shared:/app/shared
-    environment:
-      DATABASE_URL: ${PAYMENT_DATABASE_URL:-postgresql://edura:edura@postgres:5432/payment_db}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      SECRET_KEY: ${SECRET_KEY:-secret}
+    env_file:
+      - ../edura-backend/payment_service/.env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   assessment_service:
@@ -188,15 +153,12 @@ services:
     volumes:
       - ../edura-backend/assessment_service:/app
       - ../edura-backend/shared:/app/shared
-    environment:
-      DATABASE_URL: ${ASSESSMENT_DATABASE_URL:-postgresql://edura:edura@postgres:5432/assessment_db}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      SECRET_KEY: ${SECRET_KEY:-secret}
+    env_file:
+      - ../edura-backend/assessment_service/.env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   progress_service:
@@ -208,15 +170,12 @@ services:
     volumes:
       - ../edura-backend/progress_service:/app
       - ../edura-backend/shared:/app/shared
-    environment:
-      DATABASE_URL: ${PROGRESS_DATABASE_URL:-postgresql://edura:edura@postgres:5432/progress_db}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      SECRET_KEY: ${SECRET_KEY:-secret}
+    env_file:
+      - ../edura-backend/progress_service/.env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   notification_service:
@@ -228,15 +187,12 @@ services:
     volumes:
       - ../edura-backend/notification_service:/app
       - ../edura-backend/shared:/app/shared
-    environment:
-      DATABASE_URL: ${NOTIFICATION_DATABASE_URL:-postgresql://edura:edura@postgres:5432/notification_db}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      SECRET_KEY: ${SECRET_KEY:-secret}
+    env_file:
+      - ../edura-backend/notification_service/.env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   analytics_service:
@@ -248,15 +204,12 @@ services:
     volumes:
       - ../edura-backend/analytics_service:/app
       - ../edura-backend/shared:/app/shared
-    environment:
-      DATABASE_URL: ${ANALYTICS_DATABASE_URL:-postgresql://edura:edura@postgres:5432/analytics_db}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      SECRET_KEY: ${SECRET_KEY:-secret}
+    env_file:
+      - ../edura-backend/analytics_service/.env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   admin_service:
@@ -268,13 +221,10 @@ services:
     volumes:
       - ../edura-backend/admin_service:/app
       - ../edura-backend/shared:/app/shared
-    environment:
-      DATABASE_URL: ${ADMIN_DATABASE_URL:-postgresql://edura:edura@postgres:5432/admin_db}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      SECRET_KEY: ${SECRET_KEY:-secret}
+    env_file:
+      - ../edura-backend/admin_service/.env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
