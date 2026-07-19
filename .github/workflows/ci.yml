@@ -137,8 +137,7 @@ jobs:
       - name: Install Backend Test Dependencies
         run: |
           python -m pip install --upgrade pip
-          # Find and install requirements across microservices to execute tests
-          find edura-backend -name "requirements.txt" -exec pip install -r {} +
+          find edura-backend -name "requirements.txt" -exec pip install -r {} \;
           pip install pytest pytest-cov httpx
 
       - name: Run Backend Tests
