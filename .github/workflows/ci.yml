@@ -146,7 +146,16 @@ jobs:
           DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
           REDIS_HOST: localhost
         run: |
-          pytest edura-backend/ --cov=edura-backend/ --cov-report=xml
+          exit_code=0
+          for service in edura-backend/*_service; do
+            if [ -d "$service/tests" ]; then
+              echo "=================================================="
+              echo "Running tests for $service"
+              echo "=================================================="
+              PYTHONPATH=$service pytest $service --cov=$service --cov-report=xml || exit_code=1
+            fi
+          done
+          exit $exit_code
 
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v4
