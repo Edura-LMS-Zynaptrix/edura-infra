@@ -142,16 +142,23 @@ jobs:
 
       - name: Run Backend Tests
         env:
-          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
           REDIS_HOST: localhost
         run: |
           exit_code=0
           for service in edura-backend/*_service; do
             if [ -d "$service/tests" ]; then
+              db_name=$(basename $service)
+              echo "=================================================="
+              echo "Creating database test_db_$db_name"
+              echo "=================================================="
+              PGPASSWORD=test_password psql -h localhost -U test_user -d test_db -c "CREATE DATABASE test_db_$db_name;" || true
+              
               echo "=================================================="
               echo "Running tests for $service"
               echo "=================================================="
-              PYTHONPATH=$service pytest $service --cov=$service --cov-report=xml || exit_code=1
+              DATABASE_URL="postgresql://test_user:test_password@localhost:5432/test_db_$db_name" \
+              PYTHONPATH=$service \
+              pytest $service --cov=$service --cov-report=xml || exit_code=1
             fi
           done
           exit $exit_code
