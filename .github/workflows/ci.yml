@@ -42,6 +42,11 @@ jobs:
       - name: Run Ruff Linter
         run: ruff check edura-backend/
 
+      - name: Run Black Formatter Check
+        run: |
+          pip install black
+          black --check edura-backend/
+
       # Frontend Linting
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -63,6 +68,7 @@ jobs:
   build:
     name: Build Verification
     runs-on: ubuntu-latest
+    needs: lint
     steps:
       - name: Checkout Infra Repo
         uses: actions/checkout@v4
@@ -73,6 +79,9 @@ jobs:
           repository: ${{ github.repository_owner }}/edura-backend
           path: edura-backend
           token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Move Backend Repo to Parent Directory
+        run: mv ${{ github.workspace }}/edura-backend ${{ github.workspace }}/../edura-backend
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -128,16 +137,31 @@ jobs:
       - name: Install Backend Test Dependencies
         run: |
           python -m pip install --upgrade pip
-          # Find and install requirements across microservices to execute tests
-          find edura-backend -name "requirements.txt" -exec pip install -r {} +
+          find edura-backend -name "requirements.txt" -exec pip install -r {} \;
           pip install pytest pytest-cov httpx
 
       - name: Run Backend Tests
         env:
-          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
           REDIS_HOST: localhost
         run: |
-          pytest edura-backend/ --cov=edura-backend/ --cov-report=xml
+          exit_code=0
+          for service in edura-backend/*_service; do
+            if [ -d "$service/tests" ]; then
+              db_name=$(basename $service)
+              echo "=================================================="
+              echo "Creating database test_db_$db_name"
+              echo "=================================================="
+              PGPASSWORD=test_password psql -h localhost -U test_user -d test_db -c "CREATE DATABASE test_db_$db_name;" || true
+              
+              echo "=================================================="
+              echo "Running tests for $service"
+              echo "=================================================="
+              DATABASE_URL="postgresql://test_user:test_password@localhost:5432/test_db_$db_name" \
+              PYTHONPATH=$service \
+              pytest $service --cov=$service --cov-report=xml || exit_code=1
+            fi
+          done
+          exit $exit_code
 
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v4
@@ -175,7 +199,7 @@ jobs:
 
       - name: Run Python Dependency Audit
         run: |
-          find edura-backend -name "requirements.txt" -exec pip-audit -r {} --fail-on-severity high +
+          find edura-backend -name "requirements.txt" -exec pip-audit -r {} --fail-on-severity high \;
 
       # Node Security Scan
       - name: Set up Node.js
@@ -187,3 +211,33 @@ jobs:
         run: |
           cd edura-frontend
           npm audit --audit-level=high
+
+  deploy-staging:
+    name: Deploy - Staging
+    runs-on: ubuntu-latest
+    needs: security
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: staging
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Staging Environment
+        run: |
+          echo "Deploying to Staging Environment..."
+          # Insert actual staging deployment script/commands here
+
+  deploy-prod:
+    name: Deploy - Production
+    runs-on: ubuntu-latest
+    needs: security
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Production Environment
+        run: |
+          echo "Deploying to Production Environment..."
+          # Insert actual production deployment script/commands here
