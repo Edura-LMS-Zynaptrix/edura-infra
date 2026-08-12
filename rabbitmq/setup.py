@@ -4,7 +4,9 @@ import time
 import logging
 import pika
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 EXCHANGE_NAME = "edura.events"
@@ -39,8 +41,10 @@ def get_connection():
         user = os.getenv("RABBITMQ_USER", "guest")
         password = os.getenv("RABBITMQ_PASSWORD", "guest")
         credentials = pika.PlainCredentials(user, password)
-        params = pika.ConnectionParameters(host=host, port=port, credentials=credentials)
-    
+        params = pika.ConnectionParameters(
+            host=host, port=port, credentials=credentials
+        )
+
     return pika.BlockingConnection(params)
 
 
@@ -53,9 +57,13 @@ def setup_rabbitmq_topology(retries=10, delay=3):
             logger.info("Connected to RabbitMQ successfully.")
             break
         except pika.exceptions.AMQPConnectionError as err:
-            logger.warning("RabbitMQ connection failed: %s. Retrying in %d seconds...", err, delay)
+            logger.warning(
+                "RabbitMQ connection failed: %s. Retrying in %d seconds...", err, delay
+            )
             if attempt == retries:
-                logger.error("Could not connect to RabbitMQ after %d attempts.", retries)
+                logger.error(
+                    "Could not connect to RabbitMQ after %d attempts.", retries
+                )
                 raise
             time.sleep(delay)
 
@@ -82,7 +90,12 @@ def setup_rabbitmq_topology(retries=10, delay=3):
 
         # Bind Queues to Exchange with Routing Keys
         for queue_name, routing_key in BINDINGS:
-            logger.info("Binding queue '%s' to exchange '%s' with routing key '%s'...", queue_name, EXCHANGE_NAME, routing_key)
+            logger.info(
+                "Binding queue '%s' to exchange '%s' with routing key '%s'...",
+                queue_name,
+                EXCHANGE_NAME,
+                routing_key,
+            )
             channel.queue_bind(
                 queue=queue_name,
                 exchange=EXCHANGE_NAME,

@@ -5,7 +5,13 @@ import pytest
 import pika
 
 from unittest.mock import MagicMock, patch
-from rabbitmq.setup import setup_rabbitmq_topology, get_connection, EXCHANGE_NAME, QUEUES, BINDINGS
+from rabbitmq.setup import (
+    setup_rabbitmq_topology,
+    get_connection,
+    EXCHANGE_NAME,
+    QUEUES,
+    BINDINGS,
+)
 
 
 def test_setup_rabbitmq_topology_mocked():
@@ -30,7 +36,9 @@ def test_setup_rabbitmq_topology_mocked():
     # Assert Bindings declarations
     assert mock_channel.queue_bind.call_count == len(BINDINGS)
     for q, rk in BINDINGS:
-        mock_channel.queue_bind.assert_any_call(queue=q, exchange="edura.events", routing_key=rk)
+        mock_channel.queue_bind.assert_any_call(
+            queue=q, exchange="edura.events", routing_key=rk
+        )
 
 
 @pytest.fixture(scope="module")
@@ -61,7 +69,9 @@ def test_topology_queues_and_exchange_declared(rabbitmq_conn):
     channel = rabbitmq_conn.channel()
 
     # Passive declare check for exchange
-    channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type="topic", passive=True)
+    channel.exchange_declare(
+        exchange=EXCHANGE_NAME, exchange_type="topic", passive=True
+    )
 
     # Passive declare check for queues
     for q in QUEUES:
@@ -81,7 +91,7 @@ def test_pub_sub_smoke(rabbitmq_conn):
         "event": "payment.success",
         "student_id": 1,
         "course_id": 101,
-        "amount": 49.99
+        "amount": 49.99,
     }
 
     # Publish message
@@ -90,23 +100,26 @@ def test_pub_sub_smoke(rabbitmq_conn):
         routing_key="payment.success",
         body=json.dumps(test_payload),
         properties=pika.BasicProperties(
-            delivery_mode=2,
-            content_type="application/json"
-        )
+            delivery_mode=2, content_type="application/json"
+        ),
     )
 
     # Allow broker processing time
     time.sleep(0.5)
 
     # Consume from enrollment.queue
-    method_frame, header_frame, body = channel.basic_get(queue="enrollment.queue", auto_ack=True)
+    method_frame, header_frame, body = channel.basic_get(
+        queue="enrollment.queue", auto_ack=True
+    )
     assert method_frame is not None, "Message not received in enrollment.queue"
     received_msg = json.loads(body.decode("utf-8"))
     assert received_msg["event"] == "payment.success"
     assert received_msg["student_id"] == 1
 
     # Consume from notification.queue
-    method_frame_n, header_frame_n, body_n = channel.basic_get(queue="notification.queue", auto_ack=True)
+    method_frame_n, header_frame_n, body_n = channel.basic_get(
+        queue="notification.queue", auto_ack=True
+    )
     assert method_frame_n is not None, "Message not received in notification.queue"
     received_msg_n = json.loads(body_n.decode("utf-8"))
     assert received_msg_n["event"] == "payment.success"
