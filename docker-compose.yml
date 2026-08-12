@@ -23,6 +23,20 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq-setup:
+    build:
+      context: ./rabbitmq
+      dockerfile: Dockerfile
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+
   nginx:
     image: nginx:alpine
     ports:

@@ -5,7 +5,24 @@ This repository manages local development orchestration and cloud deployment con
 ## Contents
 * `nginx/` — Nginx gateway routing configuration
 * `postgres/` — Multiple-database initialization script for PostgreSQL container
+* `rabbitmq/` — RabbitMQ topic exchange, queues, and routing key topology initialization script and tests
 * `docker-compose.yml` — Local docker environment orchestrating databases, Redis, RabbitMQ, and the backend services
+
+## RabbitMQ Topology Architecture
+The RabbitMQ setup script (`rabbitmq/setup.py`) is run on startup via the `rabbitmq-setup` init container. It idempotently provisions the topology:
+* **Exchange**: `edura.events` (Topic Exchange, durable)
+* **Queues**:
+  * `notification.queue`
+  * `enrollment.queue`
+  * `progress.queue`
+* **Routing Key Bindings**:
+  * `auth.otp-requested` → `notification.queue`
+  * `payment.success` → `enrollment.queue`, `notification.queue`
+  * `payment.manual-uploaded` → `notification.queue`
+  * `enrollment.activated` → `progress.queue`
+  * `assessment.graded` → `progress.queue`, `notification.queue`
+  * `certificate.issued` → `notification.queue`
+  * `lesson.watched` → `progress.queue`
 
 ## Local Dev Quickstart
 1. Ensure **Docker Desktop** is open and running.
