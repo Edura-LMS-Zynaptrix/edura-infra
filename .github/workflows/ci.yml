@@ -58,7 +58,7 @@ jobs:
       - name: Install Frontend Dependencies
         run: |
           cd edura-frontend
-          npm ci
+          npm ci || npm install
 
       - name: Run Frontend Lint
         run: |
