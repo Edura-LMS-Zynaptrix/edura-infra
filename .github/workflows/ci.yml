@@ -17,15 +17,15 @@ jobs:
       - name: Checkout Backend Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/edura-backend
-          path: edura-backend
+          repository: ${{ github.repository_owner }}/edura-backend-2
+          path: edura-backend-2
           token: ${{ secrets.GH_PAT || github.token }}
 
       - name: Checkout Frontend Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/edura-frontend
-          path: edura-frontend
+          repository: ${{ github.repository_owner }}/edura-frontend-2
+          path: edura-frontend-2
           token: ${{ secrets.GH_PAT || github.token }}
 
       # Backend Linting
@@ -40,12 +40,12 @@ jobs:
           pip install ruff
 
       - name: Run Ruff Linter
-        run: ruff check edura-backend/
+        run: ruff check edura-backend-2/
 
       - name: Run Black Formatter Check
         run: |
           pip install black
-          black --check edura-backend/
+          black --check edura-backend-2/
 
       # Frontend Linting
       - name: Set up Node.js
@@ -53,16 +53,16 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: edura-frontend/package-lock.json
+          cache-dependency-path: edura-frontend-2/package-lock.json
 
       - name: Install Frontend Dependencies
         run: |
-          cd edura-frontend
+          cd edura-frontend-2
           npm ci || npm install
 
       - name: Run Frontend Lint
         run: |
-          cd edura-frontend
+          cd edura-frontend-2
           npm run lint || echo "Frontend lint exited with warnings/config conflicts"
 
   build:
@@ -76,12 +76,12 @@ jobs:
       - name: Checkout Backend Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/edura-backend
-          path: edura-backend
+          repository: ${{ github.repository_owner }}/edura-backend-2
+          path: edura-backend-2
           token: ${{ secrets.GH_PAT || github.token }}
 
       - name: Move Backend Repo to Parent Directory
-        run: mv ${{ github.workspace }}/edura-backend ${{ github.workspace }}/../edura-backend
+        run: mv ${{ github.workspace }}/edura-backend-2 ${{ github.workspace }}/../edura-backend-2
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -125,8 +125,8 @@ jobs:
       - name: Checkout Backend Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/edura-backend
-          path: edura-backend
+          repository: ${{ github.repository_owner }}/edura-backend-2
+          path: edura-backend-2
           token: ${{ secrets.GH_PAT || github.token }}
 
       - name: Set up Python
@@ -137,7 +137,7 @@ jobs:
       - name: Install Backend Test Dependencies
         run: |
           python -m pip install --upgrade pip
-          find edura-backend -name "requirements.txt" -exec pip install -r {} \;
+          find edura-backend-2 -name "requirements.txt" -exec pip install -r {} \;
           pip install pytest pytest-cov httpx
 
       - name: Run Backend Tests
@@ -145,7 +145,7 @@ jobs:
           REDIS_HOST: localhost
         run: |
           exit_code=0
-          for service in edura-backend/*_service; do
+          for service in edura-backend-2/*_service; do
             if [ -d "$service/tests" ]; then
               db_name=$(basename $service)
               echo "=================================================="
@@ -177,15 +177,15 @@ jobs:
       - name: Checkout Backend Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/edura-backend
-          path: edura-backend
+          repository: ${{ github.repository_owner }}/edura-backend-2
+          path: edura-backend-2
           token: ${{ secrets.GH_PAT || github.token }}
 
       - name: Checkout Frontend Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/edura-frontend
-          path: edura-frontend
+          repository: ${{ github.repository_owner }}/edura-frontend-2
+          path: edura-frontend-2
           token: ${{ secrets.GH_PAT || github.token }}
 
       # Python Security Scan
@@ -199,7 +199,7 @@ jobs:
 
       - name: Run Python Dependency Audit
         run: |
-          find edura-backend -name "requirements.txt" -exec pip-audit -r {} --fail-on-severity high \;
+          find edura-backend-2 -name "requirements.txt" -exec pip-audit -r {} --fail-on-severity high \;
 
       # Node Security Scan
       - name: Set up Node.js
@@ -209,7 +209,7 @@ jobs:
 
       - name: Run Node Dependency Audit
         run: |
-          cd edura-frontend
+          cd edura-frontend-2
           npm audit --audit-level=high || echo "Node dependency audit reported advisories"
 
   deploy-staging:
@@ -241,3 +241,4 @@ jobs:
         run: |
           echo "Deploying to Production Environment..."
           # Insert actual production deployment script/commands here
+
