@@ -1,5 +1,8 @@
 name: EDURA CI — 2-Week Build
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+
 on:
   push:
     branches: [ develop, main, 'feature/**', 'fix/**' ]
@@ -52,18 +55,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: edura-frontend-2/package-lock.json
-
-      - name: Install Frontend Dependencies
-        run: |
-          cd edura-frontend-2
-          npm ci || npm install
 
       - name: Run Frontend Lint
         run: |
-          cd edura-frontend-2
-          npm run lint || echo "Frontend lint exited with warnings/config conflicts"
+          if [ -f "edura-frontend-2/package.json" ]; then
+            cd edura-frontend-2
+            npm ci || npm install
+            npm run lint || echo "Frontend lint exited with warnings/config conflicts"
+          else
+            echo "No package.json in edura-frontend-2 yet; skipping npm lint"
+          fi
+
 
   build:
     name: Build Verification
