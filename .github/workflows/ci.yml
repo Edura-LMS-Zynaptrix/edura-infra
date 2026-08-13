@@ -17,14 +17,14 @@ jobs:
       - name: Checkout Backend Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/edura-backend-2
+          repository: danindu2024/edura-backend-2
           path: edura-backend-2
           token: ${{ secrets.GH_PAT || github.token }}
 
       - name: Checkout Frontend Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/edura-frontend-2
+          repository: danindu2024/edura-frontend-2
           path: edura-frontend-2
           token: ${{ secrets.GH_PAT || github.token }}
 
@@ -51,7 +51,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: edura-frontend-2/package-lock.json
 
@@ -76,7 +76,7 @@ jobs:
       - name: Checkout Backend Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/edura-backend-2
+          repository: danindu2024/edura-backend-2
           path: edura-backend-2
           token: ${{ secrets.GH_PAT || github.token }}
 
@@ -125,7 +125,7 @@ jobs:
       - name: Checkout Backend Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/edura-backend-2
+          repository: danindu2024/edura-backend-2
           path: edura-backend-2
           token: ${{ secrets.GH_PAT || github.token }}
 
@@ -177,14 +177,14 @@ jobs:
       - name: Checkout Backend Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/edura-backend-2
+          repository: danindu2024/edura-backend-2
           path: edura-backend-2
           token: ${{ secrets.GH_PAT || github.token }}
 
       - name: Checkout Frontend Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/edura-frontend-2
+          repository: danindu2024/edura-frontend-2
           path: edura-frontend-2
           token: ${{ secrets.GH_PAT || github.token }}
 
@@ -205,7 +205,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Run Node Dependency Audit
         run: |
@@ -241,4 +241,5 @@ jobs:
         run: |
           echo "Deploying to Production Environment..."
           # Insert actual production deployment script/commands here
+
 
