@@ -8,6 +8,13 @@ postgres-data/
 redis-data/
 rabbitmq-data/
 
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
 # OS files
 .DS_Store
 Thumbs.db
