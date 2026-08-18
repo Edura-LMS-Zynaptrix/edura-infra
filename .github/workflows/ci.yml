@@ -224,6 +224,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v3
+        if: ${{ secrets.KUBE_CONFIG_DATA != '' }}
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
+
+      - name: Verify AKS Cluster Nodes
+        if: ${{ secrets.KUBE_CONFIG_DATA != '' }}
+        run: kubectl get nodes
+
       - name: Deploy to Staging Environment
         run: |
           echo "Deploying to Staging Environment..."
