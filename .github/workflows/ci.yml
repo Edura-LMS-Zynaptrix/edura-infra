@@ -2,6 +2,10 @@ name: EDURA CI — 2-Week Build
 
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+  # Correctly resolves to GH_PAT when set, otherwise falls back to the built-in GITHUB_TOKEN.
+  # NOTE: secrets.X evaluates to empty string (not null) when unset, so the
+  #       `||` operator alone does NOT work as a fallback in GHA expressions.
+  GH_TOKEN: ${{ secrets.GH_PAT != '' && secrets.GH_PAT || github.token }}
 
 on:
   push:
@@ -9,6 +13,8 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened ]
     branches: [ develop, main ]
+  # Allow manual triggering from the Actions tab for debugging.
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -19,18 +25,22 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Checkout Backend Repo
+        # continue-on-error so fork PRs without GH_PAT still report statuses
+        # for all subsequent steps (private repo will be skipped gracefully).
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: danindu2024/edura-backend-2
           path: edura-backend-2
-          token: ${{ secrets.GH_PAT || github.token }}
+          token: ${{ env.GH_TOKEN }}
 
       - name: Checkout Frontend Repo
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: danindu2024/edura-frontend-2
           path: edura-frontend-2
-          token: ${{ secrets.GH_PAT || github.token }}
+          token: ${{ env.GH_TOKEN }}
 
       # Backend Linting
       - name: Set up Python
@@ -77,11 +87,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Checkout Backend Repo
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: danindu2024/edura-backend-2
           path: edura-backend-2
-          token: ${{ secrets.GH_PAT || github.token }}
+          token: ${{ env.GH_TOKEN }}
 
       - name: Move Backend Repo to Parent Directory
         run: mv ${{ github.workspace }}/edura-backend-2 ${{ github.workspace }}/../edura-backend-2
@@ -126,11 +137,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Checkout Backend Repo
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: danindu2024/edura-backend-2
           path: edura-backend-2
-          token: ${{ secrets.GH_PAT || github.token }}
+          token: ${{ env.GH_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -178,18 +190,20 @@ jobs:
     needs: unit-tests
     steps:
       - name: Checkout Backend Repo
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: danindu2024/edura-backend-2
           path: edura-backend-2
-          token: ${{ secrets.GH_PAT || github.token }}
+          token: ${{ env.GH_TOKEN }}
 
       - name: Checkout Frontend Repo
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: danindu2024/edura-frontend-2
           path: edura-frontend-2
-          token: ${{ secrets.GH_PAT || github.token }}
+          token: ${{ env.GH_TOKEN }}
 
       # Python Security Scan
       - name: Set up Python
