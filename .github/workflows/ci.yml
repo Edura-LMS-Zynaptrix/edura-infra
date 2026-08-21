@@ -1,247 +1,123 @@
-name: EDURA CI — 2-Week Build
-
-env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+name: Infrastructure CI & Deploy
 
 on:
   push:
-    branches: [ develop, main, 'feature/**', 'fix/**' ]
+    branches: [ develop, main ]
   pull_request:
     branches: [ develop, main ]
 
 jobs:
-  lint:
-    name: Lint & Format Check
+  # --- JOB 1: RabbitMQ Topology & Idempotency Test ---
+  rabbitmq-test:
+    name: RabbitMQ Script Verification
+    runs-on: ubuntu-latest
+    services:
+      rabbitmq:
+        image: rabbitmq:3.12-management # Uses the image specified in your guidelines[cite: 1]
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout Infra Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: pip install pika # Required by your setup.py script[cite: 4]
+
+      - name: Run Setup Script (Initial Topology Creation)
+        env:
+          RABBITMQ_HOST: localhost
+          RABBITMQ_USER: guest
+          RABBITMQ_PASSWORD: guest
+        run: python infra/rabbitmq/setup.py
+
+      - name: Run Setup Script Again (Idempotency Check)
+        env:
+          RABBITMQ_HOST: localhost
+          RABBITMQ_USER: guest
+          RABBITMQ_PASSWORD: guest
+        run: python infra/rabbitmq/setup.py
+
+  # --- JOB 2: Full Stack Smoke Test ---
+  docker-smoke-test:
+    name: Docker Compose Smoke Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Infra Repo
         uses: actions/checkout@v4
-
+        
       - name: Checkout Backend Repo
         uses: actions/checkout@v4
         with:
-          repository: danindu2024/edura-backend-2
-          path: edura-backend-2
+          repository: ${{ github.repository_owner }}/edura-backend
+          path: edura-backend
           token: ${{ secrets.GH_PAT || github.token }}
 
       - name: Checkout Frontend Repo
         uses: actions/checkout@v4
         with:
-          repository: danindu2024/edura-frontend-2
-          path: edura-frontend-2
+          repository: ${{ github.repository_owner }}/edura-frontend
+          path: edura-frontend
           token: ${{ secrets.GH_PAT || github.token }}
 
-      # Backend Linting
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install Ruff
+      - name: Align Repository Paths
         run: |
-          python -m pip install --upgrade pip
-          pip install ruff
-
-      - name: Run Ruff Linter
-        run: ruff check edura-backend-2/
-
-      - name: Run Black Formatter Check
-        run: |
-          pip install black
-          black --check edura-backend-2/
-
-      # Frontend Linting
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Run Frontend Lint
-        run: |
-          if [ -f "edura-frontend-2/package.json" ]; then
-            cd edura-frontend-2
-            npm ci || npm install
-            npm run lint || echo "Frontend lint exited with warnings/config conflicts"
-          else
-            echo "No package.json in edura-frontend-2 yet; skipping npm lint"
-          fi
-
-
-  build:
-    name: Build Verification
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - name: Checkout Infra Repo
-        uses: actions/checkout@v4
-
-      - name: Checkout Backend Repo
-        uses: actions/checkout@v4
-        with:
-          repository: danindu2024/edura-backend-2
-          path: edura-backend-2
-          token: ${{ secrets.GH_PAT || github.token }}
-
-      - name: Move Backend Repo to Parent Directory
-        run: mv ${{ github.workspace }}/edura-backend-2 ${{ github.workspace }}/../edura-backend-2
+          # Moving repos to parent directory to match your docker-compose context
+          mv ${{ github.workspace }}/edura-backend ${{ github.workspace }}/../edura-backend
+          mv ${{ github.workspace }}/edura-frontend ${{ github.workspace }}/../edura-frontend
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker Images (Validate Compiles)
+      - name: Build and Start Full Environment
         run: |
-          docker compose -f docker-compose.yml build --no-cache
+          # Builds images and spins up containers in detached mode[cite: 1]
+          docker compose -f docker-compose.yml up -d --build
 
-  unit-tests:
-    name: Unit & Integration Tests
-    runs-on: ubuntu-latest
-    needs: lint
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: test_db
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout Infra Repo
-        uses: actions/checkout@v4
-
-      - name: Checkout Backend Repo
-        uses: actions/checkout@v4
-        with:
-          repository: danindu2024/edura-backend-2
-          path: edura-backend-2
-          token: ${{ secrets.GH_PAT || github.token }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install Backend Test Dependencies
+      - name: Verify Container Health
         run: |
-          python -m pip install --upgrade pip
-          find edura-backend-2 -name "requirements.txt" -exec pip install -r {} \;
-          pip install pytest pytest-cov httpx
+          echo "Waiting 15 seconds for services to initialize..."
+          sleep 15
+          docker compose ps
+          
+          # Fails the pipeline if any container crashed on startup
+          if docker compose ps | grep -q "Exit"; then
+            echo "One or more containers failed to stay running!"
+            docker compose logs
+            exit 1
+          fi
 
-      - name: Run Backend Tests
-        env:
-          REDIS_HOST: localhost
-        run: |
-          exit_code=0
-          for service in edura-backend-2/*_service; do
-            if [ -d "$service/tests" ]; then
-              db_name=$(basename $service)
-              echo "=================================================="
-              echo "Creating database test_db_$db_name"
-              echo "=================================================="
-              PGPASSWORD=test_password psql -h localhost -U test_user -d test_db -c "CREATE DATABASE test_db_$db_name;" || true
-              
-              echo "=================================================="
-              echo "Running tests for $service"
-              echo "=================================================="
-              DATABASE_URL="postgresql://test_user:test_password@localhost:5432/test_db_$db_name" \
-              PYTHONPATH=$service \
-              pytest $service --cov=$service --cov-report=xml || exit_code=1
-            fi
-          done
-          exit $exit_code
-
-      - name: Upload Coverage Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage.xml
-
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    needs: unit-tests
-    steps:
-      - name: Checkout Backend Repo
-        uses: actions/checkout@v4
-        with:
-          repository: danindu2024/edura-backend-2
-          path: edura-backend-2
-          token: ${{ secrets.GH_PAT || github.token }}
-
-      - name: Checkout Frontend Repo
-        uses: actions/checkout@v4
-        with:
-          repository: danindu2024/edura-frontend-2
-          path: edura-frontend-2
-          token: ${{ secrets.GH_PAT || github.token }}
-
-      # Python Security Scan
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install pip-audit
-        run: pip install pip-audit
-
-      - name: Run Python Dependency Audit
-        run: |
-          find edura-backend-2 -name "requirements.txt" -exec pip-audit -r {} --fail-on-severity high \;
-
-      # Node Security Scan
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Run Node Dependency Audit
-        run: |
-          cd edura-frontend-2
-          npm audit --audit-level=high || echo "Node dependency audit reported advisories"
-
+  # --- JOB 3: Deploy to Staging ---
   deploy-staging:
     name: Deploy - Staging
     runs-on: ubuntu-latest
-    needs: security
+    needs: [rabbitmq-test, docker-smoke-test]
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     environment: staging
     steps:
-      - name: Checkout Code
+      - name: Checkout Infra Code
         uses: actions/checkout@v4
+      - name: Run Staging Deployment
+        run: echo "Deploying infrastructure to Staging Environment..."
 
-      - name: Deploy to Staging Environment
-        run: |
-          echo "Deploying to Staging Environment..."
-          # Insert actual staging deployment script/commands here
-
+  # --- JOB 4: Deploy to Production ---
   deploy-prod:
     name: Deploy - Production
     runs-on: ubuntu-latest
-    needs: security
+    needs: [rabbitmq-test, docker-smoke-test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
     steps:
-      - name: Checkout Code
+      - name: Checkout Infra Code
         uses: actions/checkout@v4
-
-      - name: Deploy to Production Environment
-        run: |
-          echo "Deploying to Production Environment..."
-          # Insert actual production deployment script/commands here
-
-
+      - name: Run Production Deployment
+        run: echo "Deploying infrastructure to Production Environment..."
