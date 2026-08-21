@@ -72,8 +72,8 @@ jobs:
       - name: Align Repository Paths
         run: |
           # Moving repos to parent directory to match your docker-compose context
-          mv ${{ github.workspace }}/edura-backend ${{ github.workspace }}/../edura-backend
-          mv ${{ github.workspace }}/edura-frontend ${{ github.workspace }}/../edura-frontend
+          [ -d "${{ github.workspace }}/edura-backend" ] && mv ${{ github.workspace }}/edura-backend ${{ github.workspace }}/../edura-backend || true
+          [ -d "${{ github.workspace }}/edura-frontend" ] && mv ${{ github.workspace }}/edura-frontend ${{ github.workspace }}/../edura-frontend || true
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
