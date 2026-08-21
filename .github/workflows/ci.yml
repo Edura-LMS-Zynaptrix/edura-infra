@@ -38,14 +38,14 @@ jobs:
           RABBITMQ_HOST: localhost
           RABBITMQ_USER: guest
           RABBITMQ_PASSWORD: guest
-        run: python infra/rabbitmq/setup.py
+        run: python rabbitmq/setup.py
 
       - name: Run Setup Script Again (Idempotency Check)
         env:
           RABBITMQ_HOST: localhost
           RABBITMQ_USER: guest
           RABBITMQ_PASSWORD: guest
-        run: python infra/rabbitmq/setup.py
+        run: python rabbitmq/setup.py
 
   # --- JOB 2: Full Stack Smoke Test ---
   docker-smoke-test:
@@ -62,12 +62,12 @@ jobs:
           path: edura-backend
           token: ${{ secrets.GH_PAT || github.token }}
 
-      - name: Checkout Frontend Repo
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository_owner }}/edura-frontend
-          path: edura-frontend
-          token: ${{ secrets.GH_PAT || github.token }}
+      # - name: Checkout Frontend Repo
+      #   uses: actions/checkout@v4
+      #   with:
+      #     repository: ${{ github.repository_owner }}/edura-frontend
+      #     path: edura-frontend
+      #     token: ${{ secrets.GH_PAT || github.token }}
 
       - name: Align Repository Paths
         run: |
