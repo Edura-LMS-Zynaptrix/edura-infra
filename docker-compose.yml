@@ -56,15 +56,15 @@ services:
 
   auth_service:
     build:
-      context: ../edura-backend-2
+      context: ../edura-backend
       dockerfile: auth_service/Dockerfile
     ports:
       - "8001:8001"
     volumes:
-      - ../edura-backend-2/auth_service:/app
-      - ../edura-backend-2/shared:/app/shared
+      - ../edura-backend/auth_service:/app
+      - ../edura-backend/shared:/app/shared
     env_file:
-      - ../edura-backend-2/auth_service/.env
+      - ../edura-backend/auth_service/.env
     depends_on:
       redis:
         condition: service_healthy
@@ -73,15 +73,15 @@ services:
 
   user_service:
     build:
-      context: ../edura-backend-2
+      context: ../edura-backend
       dockerfile: user_service/Dockerfile
     ports:
       - "8002:8002"
     volumes:
-      - ../edura-backend-2/user_service:/app
-      - ../edura-backend-2/shared:/app/shared
+      - ../edura-backend/user_service:/app
+      - ../edura-backend/shared:/app/shared
     env_file:
-      - ../edura-backend-2/user_service/.env
+      - ../edura-backend/user_service/.env
     depends_on:
       redis:
         condition: service_healthy
@@ -90,15 +90,15 @@ services:
 
   course_service:
     build:
-      context: ../edura-backend-2
+      context: ../edura-backend
       dockerfile: course_service/Dockerfile
     ports:
       - "8003:8003"
     volumes:
-      - ../edura-backend-2/course_service:/app
-      - ../edura-backend-2/shared:/app/shared
+      - ../edura-backend/course_service:/app
+      - ../edura-backend/shared:/app/shared
     env_file:
-      - ../edura-backend-2/course_service/.env
+      - ../edura-backend/course_service/.env
     depends_on:
       redis:
         condition: service_healthy
@@ -107,15 +107,15 @@ services:
 
   content_service:
     build:
-      context: ../edura-backend-2
+      context: ../edura-backend
       dockerfile: content_service/Dockerfile
     ports:
       - "8004:8004"
     volumes:
-      - ../edura-backend-2/content_service:/app
-      - ../edura-backend-2/shared:/app/shared
+      - ../edura-backend/content_service:/app
+      - ../edura-backend/shared:/app/shared
     env_file:
-      - ../edura-backend-2/content_service/.env
+      - ../edura-backend/content_service/.env
     depends_on:
       redis:
         condition: service_healthy
@@ -124,15 +124,15 @@ services:
 
   enrollment_service:
     build:
-      context: ../edura-backend-2
+      context: ../edura-backend
       dockerfile: enrollment_service/Dockerfile
     ports:
       - "8005:8005"
     volumes:
-      - ../edura-backend-2/enrollment_service:/app
-      - ../edura-backend-2/shared:/app/shared
+      - ../edura-backend/enrollment_service:/app
+      - ../edura-backend/shared:/app/shared
     env_file:
-      - ../edura-backend-2/enrollment_service/.env
+      - ../edura-backend/enrollment_service/.env
     depends_on:
       redis:
         condition: service_healthy
@@ -141,15 +141,15 @@ services:
 
   payment_service:
     build:
-      context: ../edura-backend-2
+      context: ../edura-backend
       dockerfile: payment_service/Dockerfile
     ports:
       - "8006:8006"
     volumes:
-      - ../edura-backend-2/payment_service:/app
-      - ../edura-backend-2/shared:/app/shared
+      - ../edura-backend/payment_service:/app
+      - ../edura-backend/shared:/app/shared
     env_file:
-      - ../edura-backend-2/payment_service/.env
+      - ../edura-backend/payment_service/.env
     depends_on:
       redis:
         condition: service_healthy
@@ -158,15 +158,15 @@ services:
 
   assessment_service:
     build:
-      context: ../edura-backend-2
+      context: ../edura-backend
       dockerfile: assessment_service/Dockerfile
     ports:
       - "8007:8007"
     volumes:
-      - ../edura-backend-2/assessment_service:/app
-      - ../edura-backend-2/shared:/app/shared
+      - ../edura-backend/assessment_service:/app
+      - ../edura-backend/shared:/app/shared
     env_file:
-      - ../edura-backend-2/assessment_service/.env
+      - ../edura-backend/assessment_service/.env
     depends_on:
       redis:
         condition: service_healthy
@@ -175,15 +175,15 @@ services:
 
   progress_service:
     build:
-      context: ../edura-backend-2
+      context: ../edura-backend
       dockerfile: progress_service/Dockerfile
     ports:
       - "8008:8008"
     volumes:
-      - ../edura-backend-2/progress_service:/app
-      - ../edura-backend-2/shared:/app/shared
+      - ../edura-backend/progress_service:/app
+      - ../edura-backend/shared:/app/shared
     env_file:
-      - ../edura-backend-2/progress_service/.env
+      - ../edura-backend/progress_service/.env
     depends_on:
       redis:
         condition: service_healthy
@@ -192,15 +192,15 @@ services:
 
   notification_service:
     build:
-      context: ../edura-backend-2
+      context: ../edura-backend
       dockerfile: notification_service/Dockerfile
     ports:
       - "8009:8009"
     volumes:
-      - ../edura-backend-2/notification_service:/app
-      - ../edura-backend-2/shared:/app/shared
+      - ../edura-backend/notification_service:/app
+      - ../edura-backend/shared:/app/shared
     env_file:
-      - ../edura-backend-2/notification_service/.env
+      - ../edura-backend/notification_service/.env
     depends_on:
       redis:
         condition: service_healthy
@@ -209,15 +209,15 @@ services:
 
   analytics_service:
     build:
-      context: ../edura-backend-2
+      context: ../edura-backend
       dockerfile: analytics_service/Dockerfile
     ports:
       - "8010:8010"
     volumes:
-      - ../edura-backend-2/analytics_service:/app
-      - ../edura-backend-2/shared:/app/shared
+      - ../edura-backend/analytics_service:/app
+      - ../edura-backend/shared:/app/shared
     env_file:
-      - ../edura-backend-2/analytics_service/.env
+      - ../edura-backend/analytics_service/.env
     depends_on:
       redis:
         condition: service_healthy
@@ -226,15 +226,15 @@ services:
 
   admin_service:
     build:
-      context: ../edura-backend-2
+      context: ../edura-backend
       dockerfile: admin_service/Dockerfile
     ports:
       - "8011:8011"
     volumes:
-      - ../edura-backend-2/admin_service:/app
-      - ../edura-backend-2/shared:/app/shared
+      - ../edura-backend/admin_service:/app
+      - ../edura-backend/shared:/app/shared
     env_file:
-      - ../edura-backend-2/admin_service/.env
+      - ../edura-backend/admin_service/.env
     depends_on:
       redis:
         condition: service_healthy
