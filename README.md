@@ -37,24 +37,46 @@ The RabbitMQ setup script (`rabbitmq/setup.py`) is run on startup via the `rabbi
 4. Access health checks at `http://localhost/api/auth/health` or `http://localhost/api/users/health`.
 5. Access RabbitMQ Management Dashboard at `http://localhost:15672` (using default credentials `guest`/`guest`).
 
-## CI/CD Deployment & GitHub Secrets Configuration
+## Azure AKS Cluster & ACR Registry Provisioning (DDP-#12)
 
-The GitHub Actions CI/CD pipeline defined in `.github/workflows/ci.yml` builds, tests, and deploys the EDURA Learning Management System. 
+The `scripts/provision-aks.sh` script automates the creation and configuration of the Azure AKS Kubernetes cluster and Azure Container Registry (ACR).
 
-To enable staging and production deployment stages, you must configure the following **Secrets** in your GitHub repository:
+### 1. Provisioning Azure Infrastructure
+Run the provisioning script from the repository root:
+```bash
+chmod +x scripts/provision-aks.sh
+./scripts/provision-aks.sh
+```
 
-### 1. Adding GitHub Secrets
-To add secrets to your repository:
-1. Go to your repository on GitHub: `https://github.com/<org-or-username>/edura-infra`.
-2. Navigate to **Settings** -> **Secrets and variables** -> **Actions**.
-3. Click the **New repository secret** button.
-4. Add the required keys (e.g. `STAGING_DEPLOY_TOKEN`, `PROD_DEPLOY_TOKEN`, or registry credentials) and paste their values.
+This script will:
+* Create Resource Group: `edura-rg` (Region: `eastasia`)
+* Create Azure Container Registry (ACR): `eduracr2026`
+* Create AKS Cluster: `edura-aks` (2 × `Standard_D4s_v3` nodes)
+* Link ACR to AKS via `az aks update --attach-acr eduracr2026` to grant image pull permissions without secret management
+* Configure `kubectl` context to connect to `edura-aks`
 
-### 2. Manual Production Approval Gate
-The production deployment stage (`deploy-prod`) uses a GitHub Environment called `production`.
-To set up the manual approval gate:
-1. Go to **Settings** -> **Environments**.
-2. Click **New environment** and name it `production`.
-3. Check the **Required reviewers** box under *Deployment protection rules*.
-4. Select the reviewers who must approve production deployments before they execute.
+### 2. Verification with Hello-World Pod
+Verify cluster connectivity and pod execution:
+```bash
+# 1. Verify node readiness
+kubectl get nodes
+
+# 2. Deploy test pod
+kubectl apply -f k8s/hello-world.yaml
+
+# 3. Verify pod running status
+kubectl get pods -l app=hello-world
+kubectl logs -l app=hello-world
+
+# 4. Clean up test deployment
+kubectl delete -f k8s/hello-world.yaml
+```
+
+### 3. Required GitHub Secrets for Azure Deployment
+In GitHub Repository **Settings** -> **Secrets and variables** -> **Actions**, configure:
+* `AZURE_CLIENT_ID`: Service principal / app registration client ID
+* `AZURE_TENANT_ID`: Azure Active Directory tenant ID
+* `ACR_LOGIN_SERVER`: `eduracr2026.azurecr.io`
+* `AKS_CLUSTER_NAME`: `edura-aks`
+* `AKS_RESOURCE_GROUP`: `edura-rg`
 
