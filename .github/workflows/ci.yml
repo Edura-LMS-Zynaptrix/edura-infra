@@ -116,7 +116,38 @@ jobs:
       - name: Run Staging Deployment
         run: echo "Deploying infrastructure to Staging Environment..."
 
-  # --- JOB 4: Deploy to Production ---
+  # --- JOB 4: Post-Deploy Staging Smoke Test (DDP-#24) ---
+  smoke-test-staging:
+    name: Staging E2E Smoke Test
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    steps:
+      - name: Checkout Tests Repository
+        uses: actions/checkout@v4
+        with:
+          repository: danindu-ransika/edura-tests
+          path: edura-tests
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Test Dependencies
+        run: |
+          pip install -r edura-tests/requirements.txt
+
+      - name: Run E2E Smoke Test Against Staging
+        env:
+          STAGING_API_URL: ${{ secrets.STAGING_API_URL || 'http://localhost' }}
+          PAYHERE_MERCHANT_ID: ${{ secrets.PAYHERE_MERCHANT_ID || 'sandbox_merchant_12345' }}
+          PAYHERE_MERCHANT_SECRET: ${{ secrets.PAYHERE_MERCHANT_SECRET || 'sandbox_secret_abcdef' }}
+          SMOKE_TEST_OTP: "123456"
+        run: |
+          python edura-tests/smoke/critical_path.py
+
+  # --- JOB 5: Deploy to Production ---
   deploy-prod:
     name: Deploy - Production
     runs-on: ubuntu-latest
