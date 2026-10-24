@@ -19,6 +19,9 @@ spec:
       labels:
         app: auth-service
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: auth-service
           image: __ACR__/edura-auth-service:__TAG__
@@ -69,6 +72,9 @@ spec:
       labels:
         app: user-service
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: user-service
           image: __ACR__/edura-user-service:__TAG__
@@ -119,6 +125,9 @@ spec:
       labels:
         app: course-service
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: course-service
           image: __ACR__/edura-course-service:__TAG__
@@ -169,6 +178,9 @@ spec:
       labels:
         app: content-service
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: content-service
           image: __ACR__/edura-content-service:__TAG__
@@ -219,6 +231,9 @@ spec:
       labels:
         app: enrollment-service
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: enrollment-service
           image: __ACR__/edura-enrollment-service:__TAG__
@@ -269,6 +284,9 @@ spec:
       labels:
         app: payment-service
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: payment-service
           image: __ACR__/edura-payment-service:__TAG__
@@ -319,6 +337,9 @@ spec:
       labels:
         app: assessment-service
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: assessment-service
           image: __ACR__/edura-assessment-service:__TAG__
@@ -369,6 +390,9 @@ spec:
       labels:
         app: progress-service
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: progress-service
           image: __ACR__/edura-progress-service:__TAG__
@@ -419,6 +443,9 @@ spec:
       labels:
         app: notification-service
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: notification-service
           image: __ACR__/edura-notification-service:__TAG__
@@ -462,6 +489,9 @@ spec:
       labels:
         app: analytics-service
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: analytics-service
           image: __ACR__/edura-analytics-service:__TAG__
@@ -512,6 +542,9 @@ spec:
       labels:
         app: admin-service
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: admin-service
           image: __ACR__/edura-admin-service:__TAG__

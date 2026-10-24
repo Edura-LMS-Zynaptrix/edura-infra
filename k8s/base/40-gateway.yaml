@@ -17,6 +17,9 @@ spec:
         # Changed by deploy-env.sh on every deploy so nginx reloads the config.
         edura/config-version: "__DEPLOY_ID__"
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: nginx
           image: nginx:alpine

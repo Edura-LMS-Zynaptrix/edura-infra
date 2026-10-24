@@ -14,6 +14,9 @@ spec:
       labels:
         app: redis
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: redis
           image: redis:7
