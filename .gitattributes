@@ -1,0 +1,7 @@
+# Shell scripts and manifests must keep LF endings: bash (Git Bash and CI runners)
+# fails on CRLF ('$'"\r"': command not found').
+*.sh    text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.conf  text eol=lf
+k8s/*/env text eol=lf

@@ -1,0 +1,260 @@
+name: Deploy to AKS
+
+# Build → push to ACR → deploy to AKS (DDP-#18), then smoke test on staging (DDP-#24).
+# Called by ci.yml on push to develop (staging) and main (production, with the
+# manual approval configured on the GitHub 'production' environment), and can be
+# started by hand or by edura-backend / edura-frontend via `gh workflow run`.
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      source_branch:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
+      source_branch:
+        description: Branch of edura-backend and edura-frontend to deploy
+        type: string
+        default: develop
+
+permissions:
+  id-token: write # OIDC sign-in to Azure (no stored Azure password)
+  contents: read
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+  ORG: ${{ github.repository_owner }}
+
+jobs:
+  # Pin the exact commits being deployed; every image is tagged with its git SHA.
+  prepare:
+    name: Resolve commits
+    runs-on: ubuntu-latest
+    outputs:
+      backend_sha: ${{ steps.shas.outputs.backend_sha }}
+      frontend_sha: ${{ steps.shas.outputs.frontend_sha }}
+    steps:
+      - id: shas
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          b=$(gh api "repos/$ORG/edura-backend/commits/${{ inputs.source_branch }}" --jq .sha)
+          f=$(gh api "repos/$ORG/edura-frontend/commits/${{ inputs.source_branch }}" --jq .sha)
+          echo "backend_sha=$b" >> "$GITHUB_OUTPUT"
+          echo "frontend_sha=$f" >> "$GITHUB_OUTPUT"
+          echo "edura-backend  @ ${{ inputs.source_branch }} = $b" >> "$GITHUB_STEP_SUMMARY"
+          echo "edura-frontend @ ${{ inputs.source_branch }} = $f" >> "$GITHUB_STEP_SUMMARY"
+
+  # 11 service images in parallel. An image that already exists for this SHA
+  # (e.g. built for staging, now promoted to production) is not rebuilt.
+  backend-images:
+    name: Image ${{ matrix.service }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [auth, user, course, content, enrollment, payment, assessment, progress, notification, analytics, admin]
+    env:
+      IMAGE: ${{ secrets.ACR_LOGIN_SERVER }}/edura-${{ matrix.service }}-service:${{ needs.prepare.outputs.backend_sha }}
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - run: az acr login --name "${ACR_LOGIN_SERVER%%.*}"
+      - id: exists
+        run: |
+          if docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"; echo "Already in ACR: $IMAGE"
+          fi
+      - if: steps.exists.outputs.found != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/edura-backend
+          ref: ${{ needs.prepare.outputs.backend_sha }}
+          token: ${{ secrets.GH_PAT }}
+      - if: steps.exists.outputs.found != 'true'
+        uses: docker/setup-buildx-action@v3
+      - if: steps.exists.outputs.found != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.service }}_service/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  setup-image:
+    name: Image rabbitmq-setup
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ${{ secrets.ACR_LOGIN_SERVER }}/edura-rabbitmq-setup:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - run: az acr login --name "${ACR_LOGIN_SERVER%%.*}"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./rabbitmq
+          push: true
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha,scope=rabbitmq-setup
+          cache-to: type=gha,mode=max,scope=rabbitmq-setup
+
+  deploy:
+    name: Deploy ${{ inputs.environment }}
+    needs: [prepare, backend-images, setup-image]
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.cfg.outputs.url }}
+    # Production waits here for a required reviewer (GitHub environment protection).
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ steps.cfg.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: cfg
+        run: |
+          source "k8s/${{ inputs.environment }}/env"
+          echo "domain=$DOMAIN" >> "$GITHUB_OUTPUT"
+          echo "url=https://$DOMAIN" >> "$GITHUB_OUTPUT"
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - run: az acr login --name "${ACR_LOGIN_SERVER%%.*}"
+
+      # NEXT_PUBLIC_* values are compiled into the bundle, so the frontend is
+      # built per environment (tag = <frontend SHA>-<environment>).
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/edura-frontend
+          ref: ${{ needs.prepare.outputs.frontend_sha }}
+          token: ${{ secrets.GH_PAT }}
+          path: edura-frontend
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./edura-frontend
+          push: true
+          tags: ${{ env.ACR_LOGIN_SERVER }}/edura-frontend:${{ needs.prepare.outputs.frontend_sha }}-${{ inputs.environment }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ steps.cfg.outputs.url }}
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
+          cache-from: type=gha,scope=frontend-${{ inputs.environment }}
+          cache-to: type=gha,mode=max,scope=frontend-${{ inputs.environment }}
+
+      - uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+      - name: Write service secrets
+        env:
+          AUTH_SERVICE_ENV: ${{ secrets.AUTH_SERVICE_ENV }}
+          USER_SERVICE_ENV: ${{ secrets.USER_SERVICE_ENV }}
+          COURSE_SERVICE_ENV: ${{ secrets.COURSE_SERVICE_ENV }}
+          CONTENT_SERVICE_ENV: ${{ secrets.CONTENT_SERVICE_ENV }}
+          ENROLLMENT_SERVICE_ENV: ${{ secrets.ENROLLMENT_SERVICE_ENV }}
+          PAYMENT_SERVICE_ENV: ${{ secrets.PAYMENT_SERVICE_ENV }}
+          ASSESSMENT_SERVICE_ENV: ${{ secrets.ASSESSMENT_SERVICE_ENV }}
+          PROGRESS_SERVICE_ENV: ${{ secrets.PROGRESS_SERVICE_ENV }}
+          NOTIFICATION_SERVICE_ENV: ${{ secrets.NOTIFICATION_SERVICE_ENV }}
+          ANALYTICS_SERVICE_ENV: ${{ secrets.ANALYTICS_SERVICE_ENV }}
+          ADMIN_SERVICE_ENV: ${{ secrets.ADMIN_SERVICE_ENV }}
+        run: |
+          mkdir -p .deploy-tmp/secrets
+          for s in auth user course content enrollment payment assessment progress notification analytics admin; do
+            var="${s^^}_SERVICE_ENV"
+            [ -n "${!var}" ] || { echo "::error::Secret $var is not set in the '${{ inputs.environment }}' environment"; exit 1; }
+            printf '%s\n' "${!var}" > ".deploy-tmp/secrets/$s.env"
+          done
+
+      - name: Apply manifests
+        env:
+          IMAGE_TAG: ${{ needs.prepare.outputs.backend_sha }}
+          SETUP_TAG: ${{ github.sha }}
+          FRONTEND_IMAGE: ${{ env.ACR_LOGIN_SERVER }}/edura-frontend:${{ needs.prepare.outputs.frontend_sha }}-${{ inputs.environment }}
+          SECRETS_DIR: .deploy-tmp/secrets
+          DEPLOY_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: ./scripts/deploy-env.sh "${{ inputs.environment }}"
+
+      # Through the public URL, so DNS, HTTPS, the gateway and each service are all
+      # exercised. enrollment keeps its /api/enrollments prefix (no public /health)
+      # and notification has no HTTP server; both are covered by readiness/rollout.
+      - name: Health checks
+        run: |
+          base="${{ steps.cfg.outputs.url }}"
+          failed=0
+          for p in auth users courses content payments assessments progress analytics admin; do
+            ok=""
+            for i in $(seq 1 18); do   # up to 3 min: the first deploy waits for the TLS certificate
+              if curl -fsS --max-time 10 "$base/api/$p/health" | grep -q '"status": *"ok"'; then ok=1; break; fi
+              sleep 10
+            done
+            if [ -n "$ok" ]; then echo "✅ /api/$p/health"; else echo "::error::/api/$p/health did not return status ok"; failed=1; fi
+          done
+          exit $failed
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### ${{ inputs.environment }}: ${{ steps.cfg.outputs.url }}"
+            echo '```'
+            kubectl -n "edura-${{ inputs.environment }}" get pods 2>&1 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # DDP-#24: walk the critical student path on the live staging URL.
+  smoke-test:
+    name: E2E smoke test (staging)
+    needs: deploy
+    if: inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/edura-tests
+          token: ${{ secrets.GH_PAT }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Run smoke/critical_path.py
+        env:
+          AUTH_SERVICE_ENV: ${{ secrets.AUTH_SERVICE_ENV }}
+          PAYMENT_SERVICE_ENV: ${{ secrets.PAYMENT_SERVICE_ENV }}
+        run: |
+          val() { printf '%s\n' "$1" | grep -E "^$2=" | head -1 | cut -d= -f2- | tr -d '\r'; }
+          export STAGING_API_URL="${{ needs.deploy.outputs.url }}"
+          export SECRET_KEY="$(val "$AUTH_SERVICE_ENV" SECRET_KEY)"
+          export PAYHERE_MERCHANT_ID="$(val "$PAYMENT_SERVICE_ENV" PAYHERE_MERCHANT_ID)"
+          export PAYHERE_MERCHANT_SECRET="$(val "$PAYMENT_SERVICE_ENV" PAYHERE_MERCHANT_SECRET)"
+          echo "Smoke testing $STAGING_API_URL"
+          python smoke/critical_path.py

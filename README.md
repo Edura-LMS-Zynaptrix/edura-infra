@@ -71,46 +71,52 @@ are removed by the setup script.
 4. Access health checks at `http://localhost/api/auth/health` or `http://localhost/api/users/health`.
 5. Access RabbitMQ Management Dashboard at `http://localhost:15672` (using default credentials `guest`/`guest`).
 
-## Azure AKS Cluster & ACR Registry Provisioning (DDP-#12)
+## Deployment — Azure AKS (DDP-#12, DDP-#18)
 
-The `scripts/provision-aks.sh` script automates the creation and configuration of the Azure AKS Kubernetes cluster and Azure Container Registry (ACR).
+| Environment | URL | Deployed |
+|---|---|---|
+| Staging | https://staging.eduralms.com | automatically on every push to `develop` (infra, backend or frontend) |
+| Production | https://eduralms.com | on push to `main`, after approval in the GitHub `production` environment (off until the org variable `ENABLE_PRODUCTION` is `true`) |
 
-### 1. Provisioning Azure Infrastructure
-Run the provisioning script from the repository root:
+> **Step-by-step guide, from a new Azure account to both environments live:**
+> [docs/AZURE-DEPLOYMENT.md](docs/AZURE-DEPLOYMENT.md).
+> Differences from SDS Chapter 8 are recorded in `edura-documents/ADR-13-azure-deployment-adjustments.md`.
+
+### Layout
+* `scripts/provision-aks.sh`: resource group `edura-rg`, ACR, AKS `edura-aks` (minimum setup: 1 × `Standard_D2als_v7`, `eastus`), ACR attached, static public IP for staging
+* `scripts/setup-github-oidc.sh`: OIDC sign-in from GitHub Actions to Azure (no stored passwords), and writes the Azure secrets below
+* `scripts/sync-github-secrets.sh`: uploads each service `.env` as a GitHub environment secret
+* `.github/workflows/deploy.yml`: matrix build of all images (tag = git SHA) → ACR → AKS → health checks → staging smoke test (`edura-tests/smoke/critical_path.py`)
+* `k8s/base/`: shared manifests (Redis, RabbitMQ + setup Job, 11 services, frontend, nginx gateway, Caddy HTTPS edge); `k8s/staging/`, `k8s/production/`: per-environment settings
+* `scripts/deploy-env.sh`: the deploy step (pipeline and manual); `scripts/deploy-aks.sh`: manual build and deploy fallback
+
+### Cluster access
 ```bash
-chmod +x scripts/provision-aks.sh
-./scripts/provision-aks.sh
+az login
+az aks get-credentials --resource-group edura-rg --name edura-aks
+kubectl -n edura-staging get pods
 ```
 
-This script will:
-* Create Resource Group: `edura-rg` (Region: `eastasia`)
-* Create Azure Container Registry (ACR): `eduracr2026`
-* Create AKS Cluster: `edura-aks` (2 × `Standard_D4s_v3` nodes)
-* Link ACR to AKS via `az aks update --attach-acr eduracr2026` to grant image pull permissions without secret management
-* Configure `kubectl` context to connect to `edura-aks`
-
-### 2. Verification with Hello-World Pod
-Verify cluster connectivity and pod execution:
+### Verification with Hello-World Pod (DDP-#12)
 ```bash
-# 1. Verify node readiness
-kubectl get nodes
-
-# 2. Deploy test pod
-kubectl apply -f k8s/hello-world.yaml
-
-# 3. Verify pod running status
-kubectl get pods -l app=hello-world
-kubectl logs -l app=hello-world
-
-# 4. Clean up test deployment
-kubectl delete -f k8s/hello-world.yaml
+kubectl get nodes                                   # 2 nodes Ready
+az acr import --name <acr> --source mcr.microsoft.com/azuredocs/aci-helloworld:latest --image hello-world:v1
+sed "s|mcr.microsoft.com/azuredocs/aci-helloworld:latest|<acr>.azurecr.io/hello-world:v1|" k8s/hello-world.yaml | kubectl apply -f -
+kubectl get pods -l app=hello-world && kubectl logs -l app=hello-world
+kubectl delete deployment hello-world-deployment && kubectl delete service hello-world-service
 ```
 
-### 3. Required GitHub Secrets for Azure Deployment
-In GitHub Repository **Settings** -> **Secrets and variables** -> **Actions**, configure:
-* `AZURE_CLIENT_ID`: Service principal / app registration client ID
-* `AZURE_TENANT_ID`: Azure Active Directory tenant ID
-* `ACR_LOGIN_SERVER`: `eduracr2026.azurecr.io`
-* `AKS_CLUSTER_NAME`: `edura-aks`
-* `AKS_RESOURCE_GROUP`: `edura-rg`
+### Required GitHub configuration (edura-infra)
+**Repository secrets**
+* `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`: app registration used through OIDC
+* `ACR_LOGIN_SERVER` (for example `eduracrzynaptrix.azurecr.io`), `AKS_CLUSTER_NAME` (`edura-aks`), `AKS_RESOURCE_GROUP` (`edura-rg`)
+* `GH_PAT`: fine-grained token to read edura-backend, edura-frontend and edura-tests
 
+**Repository variable:** `GOOGLE_CLIENT_ID`
+
+**Environments** `staging` and `production` (production has required reviewers), each with the secrets
+`AUTH_SERVICE_ENV`, `USER_SERVICE_ENV`, `COURSE_SERVICE_ENV`, `CONTENT_SERVICE_ENV`, `ENROLLMENT_SERVICE_ENV`,
+`PAYMENT_SERVICE_ENV`, `ASSESSMENT_SERVICE_ENV`, `PROGRESS_SERVICE_ENV`, `NOTIFICATION_SERVICE_ENV`,
+`ANALYTICS_SERVICE_ENV`, `ADMIN_SERVICE_ENV`. Each holds the full contents of that service's `.env`.
+
+edura-backend and edura-frontend need the secret `INFRA_DEPLOY_TOKEN`, which their `trigger-deploy.yml` uses.

@@ -1,0 +1,49 @@
+# The existing nginx gateway, inside the cluster. Its config is the
+# `gateway-nginx-conf` ConfigMap built from k8s/base/nginx.conf by scripts/deploy-env.sh.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+      annotations:
+        # Changed by deploy-env.sh on every deploy so nginx reloads the config.
+        edura/config-version: "__DEPLOY_ID__"
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 128Mi
+      volumes:
+        - name: conf
+          configMap:
+            name: gateway-nginx-conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+spec:
+  selector:
+    app: gateway
+  ports:
+    - port: 80
+      targetPort: 80
