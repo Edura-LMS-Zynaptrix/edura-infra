@@ -12,22 +12,87 @@ logger = logging.getLogger(__name__)
 EXCHANGE_NAME = "edura.events"
 EXCHANGE_TYPE = "topic"
 
+# ---------------------------------------------------------------------------
+# Broker topology. Services never call each other over HTTP: every change is an
+# event on the ``edura.events`` topic exchange, and each consuming service reads
+# its own durable queue. Routing keys are listed once, below, per queue.
+# ---------------------------------------------------------------------------
 QUEUES = [
-    "notification.queue",
+    "user.queue",
+    "course.queue",
+    "content.queue",
     "enrollment.queue",
+    "payment.queue",
+    "assessment.queue",
     "progress.queue",
+    "notification.queue",
+    "admin.queue",
+    "analytics.queue",
 ]
 
+# Queues from earlier versions that nothing reads any more; setup removes them.
+OBSOLETE_QUEUES = ["user.referrals.queue"]
+
+# queue -> routing keys. Mirrors edura-backend/shared/events.py (QUEUES), the single
+# source of truth the services bind their consumers from.
 BINDINGS = [
-    ("notification.queue", "auth.otp-requested"),
+    ("user.queue", "auth.user-registered"),
+    ("user.queue", "auth.account-updated"),
+    ("user.queue", "enrollment.activated"),
+    ("course.queue", "access.changed"),
+    ("content.queue", "access.changed"),
     ("enrollment.queue", "payment.success"),
-    ("notification.queue", "payment.success"),
-    ("notification.queue", "payment.manual-uploaded"),
+    ("enrollment.queue", "subscription.expired"),
+    ("enrollment.queue", "course.upserted"),
+    ("enrollment.queue", "course.deleted"),
+    ("enrollment.queue", "user.profile-upserted"),
+    ("enrollment.queue", "user.profile-deleted"),
+    ("enrollment.queue", "user.stream-upserted"),
+    ("enrollment.queue", "user.stream-deleted"),
+    ("payment.queue", "course.upserted"),
+    ("payment.queue", "course.deleted"),
+    ("assessment.queue", "access.changed"),
+    ("assessment.queue", "course.upserted"),
+    ("assessment.queue", "course.deleted"),
+    ("assessment.queue", "user.profile-upserted"),
+    ("assessment.queue", "user.profile-deleted"),
+    ("assessment.queue", "auth.user-registered"),
+    ("assessment.queue", "auth.account-updated"),
     ("progress.queue", "enrollment.activated"),
     ("progress.queue", "assessment.graded"),
+    ("progress.queue", "lesson.watched"),
+    ("notification.queue", "auth.otp-requested"),
+    ("notification.queue", "auth.email-verification-requested"),
+    ("notification.queue", "auth.password-reset-requested"),
+    ("notification.queue", "auth.password-changed"),
+    ("notification.queue", "payment.success"),
+    ("notification.queue", "payment.manual-uploaded"),
     ("notification.queue", "assessment.graded"),
     ("notification.queue", "certificate.issued"),
-    ("progress.queue", "lesson.watched"),
+    ("notification.queue", "proctoring.violation"),
+    ("notification.queue", "violation.alert"),
+    ("notification.queue", "report.progress"),
+    ("admin.queue", "user.profile-upserted"),
+    ("admin.queue", "user.profile-deleted"),
+    ("admin.queue", "auth.user-registered"),
+    ("admin.queue", "auth.account-updated"),
+    ("analytics.queue", "auth.user-registered"),
+    ("analytics.queue", "auth.account-updated"),
+    ("analytics.queue", "user.profile-upserted"),
+    ("analytics.queue", "user.profile-deleted"),
+    ("analytics.queue", "course.upserted"),
+    ("analytics.queue", "course.deleted"),
+    ("analytics.queue", "course.module-upserted"),
+    ("analytics.queue", "course.module-deleted"),
+    ("analytics.queue", "access.changed"),
+    ("analytics.queue", "enrollment.changed"),
+    ("analytics.queue", "payment.success"),
+    ("analytics.queue", "payment.receipt-uploaded"),
+    ("analytics.queue", "payment.receipt-reviewed"),
+    ("analytics.queue", "assessment.upserted"),
+    ("analytics.queue", "assessment.deleted"),
+    ("analytics.queue", "assessment.graded"),
+    ("analytics.queue", "badge.awarded"),
 ]
 
 
@@ -87,6 +152,11 @@ def setup_rabbitmq_topology(retries=10, delay=3):
                 durable=True,
                 passive=False,
             )
+
+        # Remove queues nothing reads any more, so they stop collecting messages.
+        for queue_name in OBSOLETE_QUEUES:
+            logger.info("Removing obsolete queue: '%s'...", queue_name)
+            channel.queue_delete(queue=queue_name)
 
         # Bind Queues to Exchange with Routing Keys
         for queue_name, routing_key in BINDINGS:

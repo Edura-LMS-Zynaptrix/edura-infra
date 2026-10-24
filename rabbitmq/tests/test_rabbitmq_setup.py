@@ -11,6 +11,7 @@ from rabbitmq.setup import (
     EXCHANGE_NAME,
     QUEUES,
     BINDINGS,
+    OBSOLETE_QUEUES,
 )
 
 
@@ -39,6 +40,30 @@ def test_setup_rabbitmq_topology_mocked():
         mock_channel.queue_bind.assert_any_call(
             queue=q, exchange="edura.events", routing_key=rk
         )
+
+
+def test_obsolete_queues_are_removed():
+    mock_conn = MagicMock()
+    mock_channel = MagicMock()
+    mock_conn.channel.return_value = mock_channel
+
+    with patch("rabbitmq.setup.get_connection", return_value=mock_conn):
+        setup_rabbitmq_topology(retries=1, delay=0)
+
+    for q in OBSOLETE_QUEUES:
+        mock_channel.queue_delete.assert_any_call(queue=q)
+    assert not set(OBSOLETE_QUEUES) & set(QUEUES)
+
+
+def test_topology_is_consistent():
+    """Every binding targets a declared queue; nothing is bound twice; every service has a queue."""
+    assert len(BINDINGS) == len(set(BINDINGS))
+    assert {q for q, _ in BINDINGS} == set(QUEUES)
+    for service in (
+        "user", "course", "content", "enrollment", "payment",
+        "assessment", "progress", "notification", "admin", "analytics",
+    ):
+        assert f"{service}.queue" in QUEUES
 
 
 @pytest.fixture(scope="module")
