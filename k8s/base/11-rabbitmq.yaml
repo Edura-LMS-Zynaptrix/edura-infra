@@ -16,6 +16,9 @@ spec:
       labels:
         app: rabbitmq
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       containers:
         - name: rabbitmq
           image: rabbitmq:3.12-management
@@ -85,6 +88,9 @@ spec:
   backoffLimit: 10
   template:
     spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
       restartPolicy: OnFailure
       containers:
         - name: rabbitmq-setup
