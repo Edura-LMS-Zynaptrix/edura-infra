@@ -29,6 +29,10 @@ AKS_CLUSTER="${AKS_CLUSTER:-edura-aks}"
 ACR_NAME="${ACR_NAME:-eduracrzynaptrix}"
 APP_NAME="${APP_NAME:-edura-github-deploy}"
 
+# Git Bash rewrites arguments that start with "/" into Windows paths, which turns
+# Azure scopes like /subscriptions/... into C:/Program Files/Git/subscriptions/...
+export MSYS_NO_PATHCONV=1
+
 clean() { tr -d '\r'; }
 
 SUBSCRIPTION_ID="$(az account show --query id -o tsv | clean)"
@@ -45,10 +49,15 @@ az ad sp show --id "$APP_ID" >/dev/null 2>&1 || az ad sp create --id "$APP_ID" -
 
 echo "[2/4] Granting Contributor on ${RESOURCE_GROUP}..."
 # Role assignments can take a few seconds to see a brand-new service principal.
+assigned=""
 for _ in 1 2 3 4 5; do
-  az role assignment create --assignee "$APP_ID" --role Contributor --scope "$RG_ID" --output none && break
+  if az role assignment create --assignee "$APP_ID" --role Contributor --scope "$RG_ID" --output none; then
+    assigned=1
+    break
+  fi
   sleep 10
 done
+[ -n "$assigned" ] || { echo "Could not grant Contributor on ${RG_ID}"; exit 1; }
 
 echo "[3/4] Federated credentials (which workflow runs may sign in)..."
 add_cred() {
