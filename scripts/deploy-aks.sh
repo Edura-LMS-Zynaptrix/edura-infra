@@ -61,4 +61,4 @@ mkdir -p "$SECRETS_DIR"
 trap 'rm -rf .deploy-tmp' EXIT
 for s in $SERVICES; do cp "${BACKEND_DIR}/${s}_service/.env" "${SECRETS_DIR}/${s}.env"; done
 
-./scripts/deploy-env.sh "$ENVIRONMENT"
+bash ./scripts/deploy-env.sh "$ENVIRONMENT"

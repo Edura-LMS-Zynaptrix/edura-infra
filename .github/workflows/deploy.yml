@@ -201,7 +201,7 @@ jobs:
           FRONTEND_IMAGE: ${{ env.ACR_LOGIN_SERVER }}/edura-frontend:${{ needs.prepare.outputs.frontend_sha }}-${{ inputs.environment }}
           SECRETS_DIR: .deploy-tmp/secrets
           DEPLOY_ID: ${{ github.run_id }}-${{ github.run_attempt }}
-        run: ./scripts/deploy-env.sh "${{ inputs.environment }}"
+        run: bash ./scripts/deploy-env.sh "${{ inputs.environment }}"
 
       # Through the public URL, so DNS, HTTPS, the gateway and each service are all
       # exercised. enrollment keeps its /api/enrollments prefix (no public /health)
