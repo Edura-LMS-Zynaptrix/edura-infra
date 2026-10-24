@@ -103,28 +103,36 @@ jobs:
             exit 1
           fi
 
-  # --- JOB 3: Deploy to Staging ---
+  # --- JOB 3: Deploy to Staging (DDP-#18) ---
+  # Every push to develop: build all images (tagged with the git SHA), push to
+  # ACR, deploy to the edura-staging namespace, health-check, then smoke test.
   deploy-staging:
     name: Deploy - Staging
-    runs-on: ubuntu-latest
     needs: [rabbitmq-test, docker-smoke-test]
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment: staging
-    steps:
-      - name: Checkout Infra Code
-        uses: actions/checkout@v4
-      - name: Run Staging Deployment
-        run: echo "Deploying infrastructure to Staging Environment..."
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: staging
+      source_branch: develop
+    secrets: inherit
 
   # --- JOB 4: Deploy to Production ---
+  # Push to main (a release merge). The deploy job pauses until a required
+  # reviewer approves it in the GitHub 'production' environment.
+  # Off until the org variable ENABLE_PRODUCTION is 'true' — the minimum setup
+  # (ADR-13) runs staging only.
   deploy-prod:
     name: Deploy - Production
-    runs-on: ubuntu-latest
     needs: [rabbitmq-test, docker-smoke-test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-    steps:
-      - name: Checkout Infra Code
-        uses: actions/checkout@v4
-      - name: Run Production Deployment
-        run: echo "Deploying infrastructure to Production Environment..."
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.ENABLE_PRODUCTION == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production
+      source_branch: main
+    secrets: inherit

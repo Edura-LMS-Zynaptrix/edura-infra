@@ -1,0 +1,6 @@
+# Non-secret settings for the staging environment, read by scripts/deploy-env.sh.
+# Secrets (the per-service .env files) live in the GitHub 'staging' environment.
+NAMESPACE=edura-staging
+DOMAIN=staging.eduralms.com
+# Static public IP in the AKS node resource group (scripts/provision-aks.sh).
+PUBLIC_IP_NAME=edura-staging-ip
