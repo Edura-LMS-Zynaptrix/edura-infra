@@ -1,17 +1,18 @@
-import os
 import json
+import os
 import time
-import pytest
-import pika
-
 from unittest.mock import MagicMock, patch
+
+import pika
+import pytest
+
 from rabbitmq.setup import (
-    setup_rabbitmq_topology,
-    get_connection,
-    EXCHANGE_NAME,
-    QUEUES,
     BINDINGS,
+    EXCHANGE_NAME,
     OBSOLETE_QUEUES,
+    QUEUES,
+    get_connection,
+    setup_rabbitmq_topology,
 )
 
 
@@ -60,8 +61,16 @@ def test_topology_is_consistent():
     assert len(BINDINGS) == len(set(BINDINGS))
     assert {q for q, _ in BINDINGS} == set(QUEUES)
     for service in (
-        "user", "course", "content", "enrollment", "payment",
-        "assessment", "progress", "notification", "admin", "analytics",
+        "user",
+        "course",
+        "content",
+        "enrollment",
+        "payment",
+        "assessment",
+        "progress",
+        "notification",
+        "admin",
+        "analytics",
     ):
         assert f"{service}.queue" in QUEUES
 
