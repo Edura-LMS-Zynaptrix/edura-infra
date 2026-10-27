@@ -1,6 +1,8 @@
 # EDURA Infra — Docker & Deployment Configurations
 
 [![Infrastructure CI & Deploy](https://github.com/Edura-LMS-Zynaptrix/edura-infra/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Edura-LMS-Zynaptrix/edura-infra/actions/workflows/ci.yml)
+[![Backend coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Edura-LMS-Zynaptrix/edura-backend/badges/coverage.json&label=backend%20coverage)](https://github.com/Edura-LMS-Zynaptrix/edura-backend/actions/workflows/ci.yml)
+[![Frontend coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Edura-LMS-Zynaptrix/edura-frontend/badges/coverage.json&label=frontend%20coverage)](https://github.com/Edura-LMS-Zynaptrix/edura-frontend/actions/workflows/ci.yml)
 
 This repository manages local development orchestration and cloud deployment configuration for the EDURA Learning Management System (LMS). It is one part of the EDURA project:
 
@@ -12,7 +14,7 @@ This repository manages local development orchestration and cloud deployment con
 | [edura-tests](https://github.com/Edura-LMS-Zynaptrix/edura-tests) | Integration, smoke and performance tests |
 | [edura-documents](https://github.com/Edura-LMS-Zynaptrix/edura-documents) | SRS, SDS, ADRs, retrospectives and test evidence |
 
-> **Coverage badge:** this repository contains configuration and scripts, not application code, so it has no code-coverage figure. Coverage badges are on the [edura-backend](https://github.com/Edura-LMS-Zynaptrix/edura-backend#readme) and [edura-frontend](https://github.com/Edura-LMS-Zynaptrix/edura-frontend#readme) READMEs.
+> **Coverage:** this repository contains configuration and scripts, not application code, so it has no coverage figure of its own. The two coverage badges above show the line coverage of the product this infrastructure runs: the backend and the frontend, updated by their CI on every push to `develop`.
 
 ## Deployed application
 
