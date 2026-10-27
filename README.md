@@ -1,6 +1,38 @@
 # EDURA Infra — Docker & Deployment Configurations
 
-This repository manages local development orchestration and cloud deployment configuration for the EDURA Learning Management System.
+[![Infrastructure CI & Deploy](https://github.com/Edura-LMS-Zynaptrix/edura-infra/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Edura-LMS-Zynaptrix/edura-infra/actions/workflows/ci.yml)
+
+This repository manages local development orchestration and cloud deployment configuration for the EDURA Learning Management System (LMS). It is one part of the EDURA project:
+
+| Repository | Contents |
+|---|---|
+| [edura-backend](https://github.com/Edura-LMS-Zynaptrix/edura-backend) | The 11 FastAPI microservices |
+| [edura-frontend](https://github.com/Edura-LMS-Zynaptrix/edura-frontend) | Next.js web application |
+| **edura-infra** (this repo) | Docker Compose, Nginx gateway, RabbitMQ setup, Kubernetes manifests and the deploy pipeline |
+| [edura-tests](https://github.com/Edura-LMS-Zynaptrix/edura-tests) | Integration, smoke and performance tests |
+| [edura-documents](https://github.com/Edura-LMS-Zynaptrix/edura-documents) | SRS, SDS, ADRs, retrospectives and test evidence |
+
+> **Coverage badge:** this repository contains configuration and scripts, not application code, so it has no code-coverage figure. Coverage badges are on the [edura-backend](https://github.com/Edura-LMS-Zynaptrix/edura-backend#readme) and [edura-frontend](https://github.com/Edura-LMS-Zynaptrix/edura-frontend#readme) READMEs.
+
+## Deployed application
+
+| Environment | URL |
+|---|---|
+| Staging | https://staging.eduralms.com |
+| Production | https://eduralms.com |
+
+How they are deployed is described in [Deployment — Azure AKS](#deployment--azure-aks-ddp-12-ddp-18) below.
+
+## Prerequisites
+
+To run the system locally:
+
+* [Git](https://git-scm.com/)
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Docker Compose v2)
+* The `edura-backend` repository next to this one (Docker Compose builds the service images from `../edura-backend`)
+* A PostgreSQL connection string for each backend service (the project uses [Neon](https://neon.tech/))
+
+To deploy or inspect the cloud environments you also need the Azure CLI (`az`), `kubectl`, and access to the `edura-aks` cluster (see [Cluster access](#cluster-access)).
 
 ## Contents
 * `nginx/` — Nginx gateway routing configuration
@@ -58,18 +90,40 @@ are removed by the setup script.
 | `payment.success`, `payment.receipt-*` | payment_service | enrollment, emails, revenue and bank-slip counts |
 | `assessment.upserted`, `assessment.deleted`, `assessment.graded`, `badge.awarded` | assessment_service | progress, reports and the admin dashboard |
 
-## Local Dev Quickstart
-1. Ensure **Docker Desktop** is open and running.
-2. In this directory, execute to build backend images:
+## Local Dev Quickstart (step by step)
+1. **Clone the repositories into one parent folder.** Docker Compose builds the images from the sibling `edura-backend` folder:
    ```bash
-   docker-compose build
+   mkdir edura && cd edura
+   git clone https://github.com/Edura-LMS-Zynaptrix/edura-infra.git
+   git clone https://github.com/Edura-LMS-Zynaptrix/edura-backend.git
+   git clone https://github.com/Edura-LMS-Zynaptrix/edura-frontend.git
    ```
-3. Run the complete stack:
+2. **Create the backend service `.env` files.** Each service reads `../edura-backend/<service>/.env`:
    ```bash
-   docker-compose up
+   cd edura-backend
+   for s in *_service; do cp "$s/.env.example" "$s/.env"; done      # Windows PowerShell: Get-ChildItem -Directory *_service | % { Copy-Item "$($_.Name)\.env.example" "$($_.Name)\.env" }
    ```
-4. Access health checks at `http://localhost/api/auth/health` or `http://localhost/api/users/health`.
-5. Access RabbitMQ Management Dashboard at `http://localhost:15672` (using default credentials `guest`/`guest`).
+   Fill in `DATABASE_URL` (your Neon connection string) and `SECRET_KEY` (the same value in every service). See the [edura-backend README](https://github.com/Edura-LMS-Zynaptrix/edura-backend#readme) for the full list.
+3. **Create this repository's `.env`** (RabbitMQ settings):
+   ```bash
+   cd ../edura-infra
+   cp .env.example .env              # Windows PowerShell: Copy-Item .env.example .env
+   ```
+4. Ensure **Docker Desktop** is open and running.
+5. Build the backend images and run the complete stack:
+   ```bash
+   docker compose up --build
+   ```
+   The first build takes several minutes.
+6. Access health checks at `http://localhost/api/auth/health` or `http://localhost/api/users/health`.
+7. Access RabbitMQ Management Dashboard at `http://localhost:15672` (using default credentials `guest`/`guest`).
+8. Run the frontend (see the [edura-frontend README](https://github.com/Edura-LMS-Zynaptrix/edura-frontend#readme)) and open `http://localhost:3000`.
+
+Stop the stack with `Ctrl+C`, then `docker compose down`.
+
+## Continuous integration
+
+Every pull request, and every push to `develop` and `main`, runs the **Infrastructure CI & Deploy** workflow: a RabbitMQ topology check (the setup script is run twice to prove it is idempotent) and a full Docker Compose smoke test. Pushes to `develop` then deploy to staging, and pushes to `main` deploy to production after approval.
 
 ## Deployment — Azure AKS (DDP-#12, DDP-#18)
 
