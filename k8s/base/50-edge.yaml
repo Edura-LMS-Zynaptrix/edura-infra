@@ -11,6 +11,18 @@ data:
   Caddyfile: |
     __DOMAIN__ {
       encode gzip
+
+      # Response security headers (OWASP A05, guideline 8.1). A Content-Security-Policy is
+      # not set yet: it needs a report-only trial against Next.js, Google sign-in and the
+      # YouTube / Cloudinary embeds first.
+      header {
+        Strict-Transport-Security "max-age=15552000"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+      }
+
       reverse_proxy gateway:80
     }
 ---
