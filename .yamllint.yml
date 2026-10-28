@@ -1,0 +1,14 @@
+extends: relaxed
+
+# Style rules are relaxed so that the existing, working manifests and
+# workflows pass; syntax errors and duplicate keys still fail the build.
+rules:
+  document-start: disable
+  line-length: disable
+  trailing-spaces: disable
+  new-line-at-end-of-file: disable
+  truthy:
+    check-keys: false # GitHub Actions uses `on:` as a key
+  indentation:
+    spaces: consistent
+    indent-sequences: consistent
