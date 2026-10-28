@@ -1,0 +1,10 @@
+# Accepted vulnerabilities for the "Security Scan" job
+# (.github/workflows/quality.yml). See docs/SECURITY-SCAN.md.
+#
+# One entry per line:  <advisory ID>  <reason; owner; review date>
+# Lines starting with # and blank lines are ignored.
+# The dependencies are NOT changed to clear an accepted advisory. Remove an
+# entry as soon as the dependency is fixed or no longer used.
+#
+# Example (do not uncomment):
+# PYSEC-0000-00000  not reachable: rabbitmq/setup.py only declares queues; owner @user; review 2026-12-01

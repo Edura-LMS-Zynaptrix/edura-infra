@@ -1,7 +1,8 @@
+import logging
 import os
 import sys
 import time
-import logging
+
 import pika
 
 logging.basicConfig(
