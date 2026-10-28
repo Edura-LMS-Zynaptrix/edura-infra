@@ -42,13 +42,26 @@ def test_all_11_upstream_blocks_exist():
         ), f"Upstream block for {service_name}:{port} not found in nginx.conf"
 
 
+# The enrollment service serves its own /api/enrollments prefix, so the gateway passes
+# the whole path through (no trailing slash on the location, no URI on proxy_pass).
+# Every other service has its prefix stripped by the trailing slash on proxy_pass.
+PASS_THROUGH = {"enrollment_service"}
+
+
 def test_all_11_location_routes_exist():
     content = read_nginx_conf()
     for service_name, _, path in SERVICES:
-        pattern = rf"location\s+{re.escape(path)}\s*\{{[\s\S]*?proxy_pass\s+http://{service_name}/;"
+        if service_name in PASS_THROUGH:
+            location, target = path.rstrip("/"), f"http://{service_name};"
+        else:
+            location, target = path, f"http://{service_name}/;"
+        pattern = (
+            rf"location\s+{re.escape(location)}\s*\{{[\s\S]*?"
+            rf"proxy_pass\s+{re.escape(target)}"
+        )
         assert re.search(
             pattern, content
-        ), f"Location route for {path} -> http://{service_name}/ not found in nginx.conf"
+        ), f"Location route for {location} -> {target} not found in nginx.conf"
 
 
 def test_rate_limiting_configured():
