@@ -18,6 +18,10 @@ spec:
     metadata:
       labels:
         app: auth-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and pick up
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -30,12 +34,30 @@ spec:
           envFrom:
             - secretRef:
                 name: auth-service-env
+          # A service that is slow to start (database migrations) gets up to 5 minutes
+          # before the other probes begin.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          # Takes a busy pod out of the load balancer without killing it.
           readinessProbe:
             httpGet:
               path: /health
               port: 8001
-            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          # Restarts a pod that has stopped answering (about 2 minutes of failures).
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            periodSeconds: 20
+            timeoutSeconds: 10
             failureThreshold: 6
           resources:
             requests:
@@ -71,6 +93,10 @@ spec:
     metadata:
       labels:
         app: user-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and pick up
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -83,12 +109,30 @@ spec:
           envFrom:
             - secretRef:
                 name: user-service-env
+          # A service that is slow to start (database migrations) gets up to 5 minutes
+          # before the other probes begin.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          # Takes a busy pod out of the load balancer without killing it.
           readinessProbe:
             httpGet:
               path: /health
               port: 8002
-            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          # Restarts a pod that has stopped answering (about 2 minutes of failures).
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            periodSeconds: 20
+            timeoutSeconds: 10
             failureThreshold: 6
           resources:
             requests:
@@ -116,7 +160,7 @@ metadata:
   labels:
     app: course-service
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: course-service
@@ -124,6 +168,10 @@ spec:
     metadata:
       labels:
         app: course-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and pick up
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -136,12 +184,30 @@ spec:
           envFrom:
             - secretRef:
                 name: course-service-env
+          # A service that is slow to start (database migrations) gets up to 5 minutes
+          # before the other probes begin.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          # Takes a busy pod out of the load balancer without killing it.
           readinessProbe:
             httpGet:
               path: /health
               port: 8003
-            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          # Restarts a pod that has stopped answering (about 2 minutes of failures).
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            periodSeconds: 20
+            timeoutSeconds: 10
             failureThreshold: 6
           resources:
             requests:
@@ -177,6 +243,10 @@ spec:
     metadata:
       labels:
         app: content-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and pick up
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -189,12 +259,30 @@ spec:
           envFrom:
             - secretRef:
                 name: content-service-env
+          # A service that is slow to start (database migrations) gets up to 5 minutes
+          # before the other probes begin.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          # Takes a busy pod out of the load balancer without killing it.
           readinessProbe:
             httpGet:
               path: /health
               port: 8004
-            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          # Restarts a pod that has stopped answering (about 2 minutes of failures).
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            periodSeconds: 20
+            timeoutSeconds: 10
             failureThreshold: 6
           resources:
             requests:
@@ -230,6 +318,10 @@ spec:
     metadata:
       labels:
         app: enrollment-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and pick up
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -242,12 +334,30 @@ spec:
           envFrom:
             - secretRef:
                 name: enrollment-service-env
+          # A service that is slow to start (database migrations) gets up to 5 minutes
+          # before the other probes begin.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8005
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          # Takes a busy pod out of the load balancer without killing it.
           readinessProbe:
             httpGet:
               path: /health
               port: 8005
-            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          # Restarts a pod that has stopped answering (about 2 minutes of failures).
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8005
+            periodSeconds: 20
+            timeoutSeconds: 10
             failureThreshold: 6
           resources:
             requests:
@@ -283,6 +393,10 @@ spec:
     metadata:
       labels:
         app: payment-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and pick up
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -295,12 +409,30 @@ spec:
           envFrom:
             - secretRef:
                 name: payment-service-env
+          # A service that is slow to start (database migrations) gets up to 5 minutes
+          # before the other probes begin.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8006
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          # Takes a busy pod out of the load balancer without killing it.
           readinessProbe:
             httpGet:
               path: /health
               port: 8006
-            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          # Restarts a pod that has stopped answering (about 2 minutes of failures).
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8006
+            periodSeconds: 20
+            timeoutSeconds: 10
             failureThreshold: 6
           resources:
             requests:
@@ -336,6 +468,10 @@ spec:
     metadata:
       labels:
         app: assessment-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and pick up
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -348,12 +484,30 @@ spec:
           envFrom:
             - secretRef:
                 name: assessment-service-env
+          # A service that is slow to start (database migrations) gets up to 5 minutes
+          # before the other probes begin.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8007
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          # Takes a busy pod out of the load balancer without killing it.
           readinessProbe:
             httpGet:
               path: /health
               port: 8007
-            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          # Restarts a pod that has stopped answering (about 2 minutes of failures).
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8007
+            periodSeconds: 20
+            timeoutSeconds: 10
             failureThreshold: 6
           resources:
             requests:
@@ -389,6 +543,10 @@ spec:
     metadata:
       labels:
         app: progress-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and pick up
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -401,12 +559,30 @@ spec:
           envFrom:
             - secretRef:
                 name: progress-service-env
+          # A service that is slow to start (database migrations) gets up to 5 minutes
+          # before the other probes begin.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8008
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          # Takes a busy pod out of the load balancer without killing it.
           readinessProbe:
             httpGet:
               path: /health
               port: 8008
-            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          # Restarts a pod that has stopped answering (about 2 minutes of failures).
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8008
+            periodSeconds: 20
+            timeoutSeconds: 10
             failureThreshold: 6
           resources:
             requests:
@@ -442,6 +618,10 @@ spec:
     metadata:
       labels:
         app: notification-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and pick up
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -488,6 +668,10 @@ spec:
     metadata:
       labels:
         app: analytics-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and pick up
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -500,12 +684,30 @@ spec:
           envFrom:
             - secretRef:
                 name: analytics-service-env
+          # A service that is slow to start (database migrations) gets up to 5 minutes
+          # before the other probes begin.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8010
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          # Takes a busy pod out of the load balancer without killing it.
           readinessProbe:
             httpGet:
               path: /health
               port: 8010
-            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          # Restarts a pod that has stopped answering (about 2 minutes of failures).
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8010
+            periodSeconds: 20
+            timeoutSeconds: 10
             failureThreshold: 6
           resources:
             requests:
@@ -541,6 +743,10 @@ spec:
     metadata:
       labels:
         app: admin-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and pick up
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -553,12 +759,30 @@ spec:
           envFrom:
             - secretRef:
                 name: admin-service-env
+          # A service that is slow to start (database migrations) gets up to 5 minutes
+          # before the other probes begin.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8011
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          # Takes a busy pod out of the load balancer without killing it.
           readinessProbe:
             httpGet:
               path: /health
               port: 8011
-            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          # Restarts a pod that has stopped answering (about 2 minutes of failures).
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8011
+            periodSeconds: 20
+            timeoutSeconds: 10
             failureThreshold: 6
           resources:
             requests:

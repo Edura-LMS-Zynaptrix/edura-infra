@@ -22,6 +22,19 @@ spec:
       containers:
         - name: rabbitmq
           image: rabbitmq:3.12-management
+          # The user is created from this secret when the data disk is first initialised.
+          # On an existing disk, scripts/deploy-env.sh creates or updates it with rabbitmqctl.
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: RABBITMQ_USER
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: RABBITMQ_PASSWORD
           ports:
             - containerPort: 5672
             - containerPort: 15672
@@ -101,6 +114,12 @@ spec:
             - name: RABBITMQ_PORT
               value: "5672"
             - name: RABBITMQ_USER
-              value: guest
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: RABBITMQ_USER
             - name: RABBITMQ_PASSWORD
-              value: guest
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: RABBITMQ_PASSWORD

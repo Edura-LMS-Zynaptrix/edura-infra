@@ -251,6 +251,16 @@ The pipeline overrides `FRONTEND_URL` with the environment's own URL automatical
 
 Run the script again whenever a value changes, then redeploy.
 
+### Step 8b. Set the RabbitMQ password
+
+The broker and all services share one RabbitMQ account named `edura`. Its password comes from the environment secret `RABBITMQ_PASSWORD`; any `RABBITMQ_USER` or `RABBITMQ_PASSWORD` line in a service `.env` is replaced by it. Create a long random password per environment and store it:
+
+```bash
+openssl rand -hex 24 | gh secret set RABBITMQ_PASSWORD --env staging --repo <org>/edura-infra
+```
+
+The deploy fails early if the secret is missing. On each deploy, `scripts/deploy-env.sh` creates or updates the `edura` user on the broker, restarts the services so they pick up the new secret, and then deletes the default `guest` account. To rotate the password later, change the secret and deploy again.
+
 ### Step 9. Outside services
 
 - **Google Cloud Console → APIs & Services → Credentials → OAuth client → Authorized JavaScript origins:**
@@ -415,7 +425,7 @@ Remember to start the cluster before any review or demo, and check the staging U
    The pipeline relies on its readiness probe instead. Adding a `/api/enrollments/health` route would let #18's
    "all services return 200" check include it.
 3. **Rotate the secrets** shared outside GitHub Secrets: Neon passwords, Cloudinary, Resend, `SECRET_KEY`. Then rerun Step 8.
-4. **RabbitMQ** still uses `guest/guest`. It's internal only, but OWASP A05 asks for default credentials to be removed.
+4. **RabbitMQ credentials** are no longer `guest/guest` (DDP-#73). Each environment needs a `RABBITMQ_PASSWORD` secret; see Step 8b.
 5. **Update SDS Chapter 8** to match ADR-13 (guideline §1.3).
 
 ---
