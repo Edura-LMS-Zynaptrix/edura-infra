@@ -18,6 +18,10 @@ spec:
     metadata:
       labels:
         app: auth-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and read
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -71,6 +75,10 @@ spec:
     metadata:
       labels:
         app: user-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and read
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -124,6 +132,10 @@ spec:
     metadata:
       labels:
         app: course-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and read
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -177,6 +189,10 @@ spec:
     metadata:
       labels:
         app: content-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and read
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -230,6 +246,10 @@ spec:
     metadata:
       labels:
         app: enrollment-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and read
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -283,6 +303,10 @@ spec:
     metadata:
       labels:
         app: payment-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and read
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -336,6 +360,10 @@ spec:
     metadata:
       labels:
         app: assessment-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and read
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -389,6 +417,10 @@ spec:
     metadata:
       labels:
         app: progress-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and read
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -442,6 +474,10 @@ spec:
     metadata:
       labels:
         app: notification-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and read
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -488,6 +524,10 @@ spec:
     metadata:
       labels:
         app: analytics-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and read
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.
@@ -541,6 +581,10 @@ spec:
     metadata:
       labels:
         app: admin-service
+      annotations:
+        # Changes when the RabbitMQ credentials change, so the pods restart and read
+        # the new secret (a secret change alone does not restart running pods).
+        edura/rabbitmq-credentials: "__RABBITMQ_CRED_VERSION__"
     spec:
       # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
       # for every Service, overriding the plain port numbers the services expect.

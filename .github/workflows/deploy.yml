@@ -186,8 +186,11 @@ jobs:
           NOTIFICATION_SERVICE_ENV: ${{ secrets.NOTIFICATION_SERVICE_ENV }}
           ANALYTICS_SERVICE_ENV: ${{ secrets.ANALYTICS_SERVICE_ENV }}
           ADMIN_SERVICE_ENV: ${{ secrets.ADMIN_SERVICE_ENV }}
+          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
         run: |
           mkdir -p .deploy-tmp/secrets
+          [ -n "$RABBITMQ_PASSWORD" ] || { echo "::error::Secret RABBITMQ_PASSWORD is not set in the '${{ inputs.environment }}' environment"; exit 1; }
+          printf 'RABBITMQ_USER=edura\nRABBITMQ_PASSWORD=%s\n' "$RABBITMQ_PASSWORD" > .deploy-tmp/secrets/rabbitmq.env
           for s in auth user course content enrollment payment assessment progress notification analytics admin; do
             var="${s^^}_SERVICE_ENV"
             [ -n "${!var}" ] || { echo "::error::Secret $var is not set in the '${{ inputs.environment }}' environment"; exit 1; }
