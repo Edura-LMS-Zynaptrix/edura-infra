@@ -31,7 +31,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install Dependencies
-        run: pip install pika # Required by your setup.py script[cite: 4]
+        run: pip install pika pytest # pika is required by setup.py; pytest runs the topology tests
 
       - name: Run Setup Script (Initial Topology Creation)
         env:
@@ -46,6 +46,32 @@ jobs:
           RABBITMQ_USER: guest
           RABBITMQ_PASSWORD: guest
         run: python rabbitmq/setup.py
+
+      - name: Run RabbitMQ topology tests (against the broker above)
+        env:
+          RABBITMQ_HOST: localhost
+        run: python -m pytest rabbitmq/tests -v
+
+  # --- JOB 1b: Gateway and Edge Configuration Tests ---
+  # Checks nginx.conf (routes, rate limit, CORS, proxy headers) and the Caddy
+  # security headers in k8s/base/50-edge.yaml without starting any container.
+  config-test:
+    name: Gateway & Edge Config Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Infra Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: pip install pytest pyyaml
+
+      - name: Run gateway and edge config tests
+        run: python -m pytest nginx/tests -v
 
   # --- JOB 2: Full Stack Smoke Test ---
   docker-smoke-test:
