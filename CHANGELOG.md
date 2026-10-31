@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-31
+
 ### Added
 - AKS build-push-deploy pipeline for staging, with OIDC login to Azure and health checks after deployment (`deploy.yml`, `scripts/`)
 - Security response headers on the public edge: HSTS, X-Content-Type-Options, X-Frame-Options and Referrer-Policy (DDP-#64)
@@ -57,7 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Local PostgreSQL container replaced by Neon
 
-[Unreleased]: https://github.com/Edura-LMS-Zynaptrix/edura-infra/compare/v0.3.0...develop
+[Unreleased]: https://github.com/Edura-LMS-Zynaptrix/edura-infra/compare/v1.0.0...develop
+[1.0.0]: https://github.com/Edura-LMS-Zynaptrix/edura-infra/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/Edura-LMS-Zynaptrix/edura-infra/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Edura-LMS-Zynaptrix/edura-infra/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Edura-LMS-Zynaptrix/edura-infra/releases/tag/v0.1.0
