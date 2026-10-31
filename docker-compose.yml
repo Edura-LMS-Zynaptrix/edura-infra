@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   redis:
@@ -22,6 +20,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  rabbitmq-setup:
+    build:
+      context: ./rabbitmq
+      dockerfile: Dockerfile
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
 
   nginx:
     image: nginx:alpine
@@ -58,6 +70,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      rabbitmq-setup:
+        condition: service_completed_successfully
 
   user_service:
     build:
@@ -75,6 +89,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      rabbitmq-setup:
+        condition: service_completed_successfully
 
   course_service:
     build:
@@ -92,6 +108,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      rabbitmq-setup:
+        condition: service_completed_successfully
 
   content_service:
     build:
@@ -109,6 +127,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      rabbitmq-setup:
+        condition: service_completed_successfully
 
   enrollment_service:
     build:
@@ -126,6 +146,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      rabbitmq-setup:
+        condition: service_completed_successfully
 
   payment_service:
     build:
@@ -143,6 +165,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      rabbitmq-setup:
+        condition: service_completed_successfully
 
   assessment_service:
     build:
@@ -160,6 +184,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      rabbitmq-setup:
+        condition: service_completed_successfully
 
   progress_service:
     build:
@@ -177,6 +203,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      rabbitmq-setup:
+        condition: service_completed_successfully
 
   notification_service:
     build:
@@ -194,6 +222,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      rabbitmq-setup:
+        condition: service_completed_successfully
 
   analytics_service:
     build:
@@ -211,6 +241,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      rabbitmq-setup:
+        condition: service_completed_successfully
 
   admin_service:
     build:
@@ -228,3 +260,6 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      rabbitmq-setup:
+        condition: service_completed_successfully
+

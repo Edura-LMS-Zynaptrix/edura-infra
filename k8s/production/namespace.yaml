@@ -1,0 +1,7 @@
+# Production — deployed from main after manual approval in the GitHub 'production' environment.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: edura-production
+  labels:
+    edura/environment: production

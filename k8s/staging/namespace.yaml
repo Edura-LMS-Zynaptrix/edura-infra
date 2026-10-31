@@ -1,0 +1,7 @@
+# Staging — auto-deployed on every push to develop (DDP-#18). Used for UAT and the panel demo.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: edura-staging
+  labels:
+    edura/environment: staging

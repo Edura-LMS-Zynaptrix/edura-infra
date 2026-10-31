@@ -1,0 +1,106 @@
+# Public entry point: Caddy terminates HTTPS (free Let's Encrypt certificate,
+# obtained and renewed automatically) and forwards everything to the gateway.
+#
+# The load balancer uses the static public IP __PIP_NAME__ (created by
+# scripts/provision-aks.sh), so the DNS A record for __DOMAIN__ never changes.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: caddyfile
+data:
+  Caddyfile: |
+    __DOMAIN__ {
+      encode gzip
+
+      # Response security headers (OWASP A05, guideline 8.1). A Content-Security-Policy is
+      # not set yet: it needs a report-only trial against Next.js, Google sign-in and the
+      # YouTube / Cloudinary embeds first.
+      header {
+        Strict-Transport-Security "max-age=15552000"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+      }
+
+      reverse_proxy gateway:80
+    }
+---
+# Keeps issued certificates across restarts (Let's Encrypt rate-limits re-issuing).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: caddy-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: managed-csi
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caddy
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # the disk can only be attached to one pod at a time
+  selector:
+    matchLabels:
+      app: caddy
+  template:
+    metadata:
+      labels:
+        app: caddy
+      annotations:
+        edura/config-version: "__DEPLOY_ID__"
+    spec:
+      # Kubernetes would otherwise inject REDIS_PORT=tcp://..., RABBITMQ_PORT=tcp://...
+      # for every Service, overriding the plain port numbers the services expect.
+      enableServiceLinks: false
+      containers:
+        - name: caddy
+          image: caddy:2
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+          volumeMounts:
+            - name: config
+              mountPath: /etc/caddy/Caddyfile
+              subPath: Caddyfile
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 256Mi
+      volumes:
+        - name: config
+          configMap:
+            name: caddyfile
+        - name: data
+          persistentVolumeClaim:
+            claimName: caddy-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: caddy
+  annotations:
+    service.beta.kubernetes.io/azure-pip-name: __PIP_NAME__
+spec:
+  type: LoadBalancer
+  # Preserve the visitor's IP so the gateway rate limit is per user.
+  externalTrafficPolicy: Local
+  selector:
+    app: caddy
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
